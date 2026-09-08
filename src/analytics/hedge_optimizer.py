@@ -70,11 +70,11 @@ def compute_hedge_priority_scores(
             priority_score = cfar_i * proximity_i * (1.0 - coverage_i)
 
             if coverage_i < 0.30:
-                rec = "🔴 Increase coverage urgently"
+                rec = "Increase coverage urgently"
             elif coverage_i < 0.60:
-                rec = "🟡 Consider increasing coverage"
+                rec = "Consider increasing coverage"
             else:
-                rec = "🟢 Adequate coverage"
+                rec = "Adequate coverage"
 
             rows.append({
                 "Factor": factor,

@@ -14,7 +14,17 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 import streamlit as st
+import os
+import sqlite3
 import pandas as pd
+
+# Monkey-patch pandas Styler.applymap to fix Streamlit crash with pandas >= 2.1
+try:
+    from pandas.io.formats.style import Styler
+    Styler.applymap = Styler.map
+except Exception:
+    pass
+
 import numpy as np
 import plotly.io as pio
 import plotly.graph_objects as go
