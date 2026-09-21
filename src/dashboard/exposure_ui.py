@@ -132,10 +132,14 @@ def render_exposure_mapping_tab():
 
     with col_seed:
         st.markdown("<div style='height:28px'></div>", unsafe_allow_html=True)
-        if st.button("Load Toyota Case Study", use_container_width=True):
+        if st.button("Load Toyota Real FY 24", use_container_width=True):
             try:
-                seed_toyota()
-                st.success("Toyota Motor (Case Study) loaded.")
+                import subprocess
+                import sys
+                from pathlib import Path
+                script_path = Path(__file__).parent.parent.parent / "seed_real_toyota.py"
+                subprocess.run([sys.executable, str(script_path)], check=True)
+                st.success("Toyota (Real FY24) loaded.")
                 st.rerun()
             except Exception as e:
                 st.error(f"Failed to seed data: {e}")

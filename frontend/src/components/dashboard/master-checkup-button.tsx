@@ -30,7 +30,7 @@ export function MasterCheckupButton() {
       const res = await fetch("http://localhost:8000/api/report/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ company_name: "Toyota (Case Study)" })
+        body: JSON.stringify({ company_name: "Toyota (Real FY24)" })
       });
       
       if (!res.ok) throw new Error("Failed to generate report");

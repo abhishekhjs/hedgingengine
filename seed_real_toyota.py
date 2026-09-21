@@ -9,6 +9,11 @@ conn = sqlite3.connect(str(DB_PATH))
 
 company_name = 'Toyota (Real FY24)'
 
+# Clear existing data
+conn.execute('DELETE FROM company_exposure WHERE company_name = ?', (company_name,))
+conn.execute('DELETE FROM hedges WHERE company_name = ?', (company_name,))
+conn.execute('DELETE FROM company_financials WHERE company_name = ?', (company_name,))
+
 # 1. Company Exposure (Gross amounts)
 exposure_data = [
     # Commodities (Volumes in tons/lbs) - estimated for 10M vehicles
