@@ -112,11 +112,9 @@ def render_optimization_tab():
 
             # Top recommendation banner
             top = priority_df.iloc[0]
-            st.info(
-                f"**Highest Priority:** **{top['Factor']}** ({top['Category']}) — "
-                f"HedgePriority Score {top['HedgePriority Score']:.3f}. "
-                f"Current coverage: {top['Coverage %']:.0f}%. {top['Action']}."
-            )
+            from src.dashboard.components import render_insight
+            insight_msg = f"Optimization Priority: <strong>{top['Factor']}</strong> ({top['Category']}) represents the highest unhedged tail-risk priority (Score {top['HedgePriority Score']:.3f}). Current coverage is {top['Coverage %']:.0f}%. Action recommended: <strong>{top['Action']}</strong>."
+            render_insight(insight_msg)
         else:
             st.info("No factor exposures found. Enter exposures in the Company Exposure Mapping tab.")
 
@@ -141,10 +139,9 @@ def render_optimization_tab():
             actual_evar = res_actual["risk_metrics"]["EV"]["var_95"]
             flexibility_value = actual_evar - unhedged_evar
 
-            st.info(
-                f"Active hedges preserve **JPY {flexibility_value/1e9:,.1f} Billion** in Enterprise Value "
-                f"at the 95% tail-risk threshold vs. an unhedged position."
-            )
+            from src.dashboard.components import render_insight
+            insight_msg = f"Financial Flexibility: Your active hedges preserve <strong>JPY {flexibility_value/1e9:,.1f} Billion</strong> in Enterprise Value at the 95% tail-risk threshold compared to a completely unhedged position."
+            render_insight(insight_msg)
 
             fc1, fc2 = st.columns(2)
             fc1.metric("Unhedged 95% EVaR", f"JPY {unhedged_evar/1e9:,.1f}B")
@@ -188,27 +185,27 @@ def render_optimization_tab():
 
             scenarios = ["Unhedged Baseline", "Current Overlay", "Optimized Strategy"]
             evar_values = [unhedged_evar, actual_evar, opt_evar]
-            opt_color = "#4318FF" if opt_evar >= actual_evar else "#EE5D50"
+            opt_color = "#533afd" if opt_evar >= actual_evar else "#ea2261"
 
             fig = go.Figure(go.Bar(
                 x=scenarios,
                 y=[v / 1e9 for v in evar_values],
-                text=[f"JPY {v/1e9:.1f}B" for v in evar_values],
+                text=[f"¥{v/1e9:.1f}B" for v in evar_values],
                 textposition="auto",
                 marker=dict(
-                    color=["#EE5D50", "#A3AED0", opt_color],
-                    line=dict(color="#FFFFFF", width=1.5),
+                    color=["#ea2261", "#64748d", opt_color],
+                    line=dict(color="#ffffff", width=1.5),
                 ),
             ))
             fig.update_layout(
                 title=dict(text="95% Enterprise Value-at-Risk by Strategy",
-                           font=dict(size=14, color="#2B3674")),
+                           font=dict(size=14, color="#0d253d", family="Inter, -apple-system, sans-serif")),
                 yaxis_title="95% EVaR (JPY B)",
                 showlegend=False,
                 height=340,
                 margin=dict(l=30, r=20, t=40, b=30),
-                paper_bgcolor="#FFFFFF",
-                plot_bgcolor="#FFFFFF",
+                paper_bgcolor="#ffffff",
+                plot_bgcolor="#ffffff",
             )
             st.plotly_chart(fig, use_container_width=True)
 
@@ -217,13 +214,13 @@ def render_optimization_tab():
         oc1, oc2, oc3 = st.columns(3)
         oc1.metric(
             "Optimized 95% EVaR",
-            f"JPY {opt_evar/1e9:,.1f}B",
-            delta=f"JPY {(opt_evar - actual_evar)/1e9:,.1f}B vs Current",
+            f"¥{opt_evar/1e9:,.1f}B",
+            delta=f"¥{(opt_evar - actual_evar)/1e9:,.1f}B vs Current",
         )
         oc2.metric(
             "Optimized 95% CFaR",
-            f"JPY {opt_cfar/1e9:,.1f}B",
-            delta=f"JPY {(opt_cfar - res_actual['risk_metrics']['FCF']['var_95'])/1e9:,.1f}B vs Current",
+            f"¥{opt_cfar/1e9:,.1f}B",
+            delta=f"¥{(opt_cfar - res_actual['risk_metrics']['FCF']['var_95'])/1e9:,.1f}B vs Current",
         )
         prob_shortfall = res_opt["liquidity_shortfall_prob"]
         if prob_shortfall > 0:
@@ -250,30 +247,10 @@ def render_optimization_tab():
         with st.spinner("Running frontier grid (36 scenarios x 2,000 iterations)..."):
             try:
                 from src.analytics.hedge_optimizer import compute_efficient_frontier
-                pivot = compute_efficient_frontier(conn=None, risk_profile=actual_profile,
-                                                  financials=financials, steps=6)
-                # Re-run with proper conn
                 with get_connection() as conn:
-                    pass
-                from src.analytics.hedge_optimizer import compute_efficient_frontier as cef
-
-                records = []
-                ratios = [0.0, 0.2, 0.4, 0.6, 0.8, 1.0]
-                for comm_r in ratios:
-                    for fx_r in ratios:
-                        opt_p = apply_hypothetical_hedges(actual_profile, comm_r, fx_r, 0.5)
-                        with get_connection() as conn:
-                            np.random.seed(42)
-                            res = run_monte_carlo_simulation(conn, opt_p, financials, n_iterations=2000)
-                        cfar = res["risk_metrics"]["FCF"]["var_95"] / 1e9
-                        records.append({
-                            "Commodity": f"{comm_r:.0%}",
-                            "FX": f"{fx_r:.0%}",
-                            "CFaR_95_B": round(cfar, 2),
-                        })
-
-                df_frontier = pd.DataFrame(records)
-                pivot = df_frontier.pivot(index="Commodity", columns="FX", values="CFaR_95_B")
+                    pivot = compute_efficient_frontier(conn=conn, risk_profile=actual_profile,
+                                                      financials=financials, steps=6)
+                
                 st.session_state["opt_frontier"] = pivot
 
             except Exception as e:
@@ -287,13 +264,14 @@ def render_optimization_tab():
             frontier,
             text_auto=True,
             aspect="auto",
-            color_continuous_scale=[[0, "#4318FF"], [0.5, "#F4F7FE"], [1, "#EE5D50"]],
+            color_continuous_scale=[[0, "#533afd"], [0.5, "#f6f9fc"], [1, "#ea2261"]],
             labels=dict(x="FX Coverage", y="Commodity Coverage", color="CFaR (JPY B)"),
         )
         fig_frontier.update_layout(
             height=380,
             margin=dict(l=20, r=20, t=30, b=20),
-            paper_bgcolor="#FFFFFF",
+            paper_bgcolor="#ffffff",
         )
         st.plotly_chart(fig_frontier, use_container_width=True)
-        st.caption("Blue = lower CFaR (less tail risk). Red = higher CFaR (more tail risk).")
+        st.caption("Indigo = lower CFaR (less tail risk). Ruby = higher CFaR (more tail risk).")
+

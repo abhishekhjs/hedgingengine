@@ -1,0 +1,220 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * Stripi Design System - Tailwind v4 Theme
+ * Brand: Electric indigo primary, dark navy shell, Inter thin-weight typography
+ * Shape: 12px card radius, pill buttons (9999px), 1px hairline borders
+ */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-inter);
+  --font-mono: var(--font-geist-mono);
+  --font-heading: var(--font-inter);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+
+  /* Stripi radii: 12px cards, pill buttons */
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-2xl: 1.5rem;
+  --radius-3xl: 9999px;
+  --radius-4xl: 9999px;
+
+  /* Stripi custom colors */
+  --color-stripi-primary: #533afd;
+  --color-stripi-primary-deep: #4434d4;
+  --color-stripi-primary-soft: #665efd;
+  --color-stripi-brand-dark: #1c1e54;
+  --color-stripi-ink: #0d253d;
+  --color-stripi-ink-secondary: #273951;
+  --color-stripi-ink-mute: #64748d;
+  --color-stripi-canvas: #ffffff;
+  --color-stripi-canvas-soft: #f6f9fc;
+  --color-stripi-hairline: #e3e8ee;
+  --color-stripi-ruby: #ea2261;
+  --color-stripi-magenta: #f96bee;
+  --color-stripi-emerald: #059669;
+}
+
+/* ----------------------------------------------------------------
+ * LIGHT MODE - Stripi tokens mapped to shadcn semantic variables
+ * ---------------------------------------------------------------- */
+:root {
+  --background: #f6f9fc;
+  --foreground: #0d253d;
+  --card: #ffffff;
+  --card-foreground: #0d253d;
+  --popover: #ffffff;
+  --popover-foreground: #0d253d;
+  --primary: #533afd;
+  --primary-foreground: #ffffff;
+  --secondary: #f6f9fc;
+  --secondary-foreground: #273951;
+  --muted: #f6f9fc;
+  --muted-foreground: #64748d;
+  --accent: #f6f9fc;
+  --accent-foreground: #0d253d;
+  --destructive: #ea2261;
+  --border: #e3e8ee;
+  --input: #e3e8ee;
+  --ring: #533afd;
+
+  /* Stripi chart palette */
+  --chart-1: #533afd;
+  --chart-2: #665efd;
+  --chart-3: #ea2261;
+  --chart-4: #059669;
+  --chart-5: #1c1e54;
+
+  /* Sidebar: dark navy shell */
+  --sidebar: #1c1e54;
+  --sidebar-foreground: rgba(255, 255, 255, 0.87);
+  --sidebar-primary: #533afd;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: rgba(83, 58, 253, 0.12);
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: rgba(255, 255, 255, 0.08);
+  --sidebar-ring: #533afd;
+}
+
+/* ----------------------------------------------------------------
+ * DARK MODE (unused for dashboard, but defined for completeness)
+ * ---------------------------------------------------------------- */
+.dark {
+  --background: #0d1117;
+  --foreground: #e6edf3;
+  --card: #161b22;
+  --card-foreground: #e6edf3;
+  --popover: #161b22;
+  --popover-foreground: #e6edf3;
+  --primary: #665efd;
+  --primary-foreground: #ffffff;
+  --secondary: #21262d;
+  --secondary-foreground: #e6edf3;
+  --muted: #21262d;
+  --muted-foreground: #8b949e;
+  --accent: #21262d;
+  --accent-foreground: #e6edf3;
+  --destructive: #ea2261;
+  --border: #30363d;
+  --input: #30363d;
+  --ring: #665efd;
+  --chart-1: #665efd;
+  --chart-2: #533afd;
+  --chart-3: #ea2261;
+  --chart-4: #059669;
+  --chart-5: #b9b9f9;
+  --sidebar: #0d1117;
+  --sidebar-foreground: #e6edf3;
+  --sidebar-primary: #665efd;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: rgba(102, 94, 253, 0.12);
+  --sidebar-accent-foreground: #e6edf3;
+  --sidebar-border: #30363d;
+  --sidebar-ring: #665efd;
+}
+
+/* ----------------------------------------------------------------
+ * BASE STYLES
+ * ---------------------------------------------------------------- */
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
+}
+
+/* ----------------------------------------------------------------
+ * STRIPI TYPOGRAPHY
+ * Inter thin (300) for display, 400 for body
+ * font-feature-settings: "ss01" globally, "tnum" for numerics
+ * ---------------------------------------------------------------- */
+html {
+  font-feature-settings: "ss01" 1;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Tabular figures for all financial/numeric data */
+.font-tabular,
+.tnum,
+[data-tnum] {
+  font-feature-settings: "ss01" 1, "tnum" 1;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Display typography: weight 300, negative tracking */
+.display-xxl {
+  font-size: 3.5rem;
+  font-weight: 300;
+  letter-spacing: -0.025em;
+  line-height: 1.1;
+}
+.display-xl {
+  font-size: 3rem;
+  font-weight: 300;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+.display-lg {
+  font-size: 2rem;
+  font-weight: 300;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+/* Stripi card shadow */
+.shadow-stripi {
+  box-shadow: rgba(0, 55, 112, 0.08) 0px 1px 3px, rgba(0, 55, 112, 0.04) 0px 0px 0px 1px;
+}
+
+/* Stripi pill button override */
+.btn-pill {
+  border-radius: 9999px;
+  padding: 0.5rem 1rem;
+  font-weight: 400;
+  font-size: 0.875rem;
+  transition: background-color 150ms ease, transform 100ms ease;
+}
+.btn-pill:active {
+  transform: scale(0.98);
+}

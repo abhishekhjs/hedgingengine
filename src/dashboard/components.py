@@ -15,6 +15,19 @@ from src.config import JGB_DASHBOARD_TENORS, JGB_SPREADS, STALENESS_THRESHOLD_DA
 # Formatting helpers
 # ---------------------------------------------------------------------------
 
+def render_insight(text: str):
+    """Render a Binance Light-styled dynamic text insight card."""
+    st.markdown(f"""
+    <div style="margin-top: 14px; margin-bottom: 14px; padding: 14px 18px; border-radius: 8px; 
+                background-color: #fafafa; border: 1px solid #eaecef; border-left: 4px solid #1e40af; 
+                color: #181a20; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+        <div style="line-height: 1.5; font-size: 13.5px; font-weight: 400; color: #181a20;">
+            {text}
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+
 def _fmt_change(val, is_rate=False):
     """Format a change value with sign and units."""
     if val is None or (isinstance(val, float) and np.isnan(val)):
@@ -62,22 +75,20 @@ def render_data_quality_warnings(conn):
             """
             df = pd.read_sql_query(query, conn)
             for _, row in df.iterrows():
-                instrument = row[key_col]
-                latest = pd.to_datetime(row["latest_date"]).date()
-                days_old = (today - latest).days
-
-                if days_old > STALENESS_THRESHOLD_DAYS:
-                    warnings.append(
-                        f"[{instrument}] Latest data is {days_old} days old (last: {row['latest_date']})"
-                    )
+                try:
+                    d = datetime.strptime(str(row["latest_date"])[:10], "%Y-%m-%d").date()
+                    if (today - d).days > STALENESS_THRESHOLD_DAYS:
+                        warnings.append(
+                            f"[{row[key_col]}] Data stale: last update was {row['latest_date']}"
+                        )
+                except Exception:
+                    pass
         except Exception:
             pass
 
     try:
-        fallback_df = pd.read_sql_query(
-            "SELECT DISTINCT commodity FROM commodity_prices WHERE source = 'FRED_MONTHLY_FALLBACK'",
-            conn,
-        )
+        fallback_query = "SELECT DISTINCT commodity FROM commodity_prices WHERE source = 'FRED_MONTHLY'"
+        fallback_df = pd.read_sql_query(fallback_query, conn)
         for _, row in fallback_df.iterrows():
             warnings.append(
                 f"[{row['commodity']}] Using monthly FRED fallback data (yfinance daily unavailable)"
@@ -87,9 +98,14 @@ def render_data_quality_warnings(conn):
 
     if warnings:
         count = len(warnings)
-        label = f"Data Feed Notice ({count} alert{'s' if count > 1 else ''})"
-        with st.expander(label, expanded=False):
-            st.warning("\n\n".join(warnings))
+        label = f"⚠️ {count} Data Alert{'s' if count > 1 else ''}"
+        
+        # Push the popover button to the right corner
+        _, col_btn = st.columns([0.8, 0.2])
+        with col_btn:
+            with st.popover(label, use_container_width=True):
+                for w in warnings:
+                    st.warning(w)
 
 
 # ---------------------------------------------------------------------------
@@ -107,42 +123,111 @@ def build_summary_table(metrics_df: pd.DataFrame, instruments: list,
             rows.append({
                 "Instrument": inst,
                 value_col_label: "—",
+                "Dir": "—",
                 "1D Change": "—",
                 "1M Change": "—",
                 "Vol (30D)": "—",
                 "Z-Score": "—",
-                "Percentile": "—",
+                "52W Range": "—",
             })
             continue
 
         latest = subset.iloc[-1]
         r1d = latest.get("return_1d")
         r1m = latest.get("return_1m")
+        high_52w = latest.get("high_52w")
+        low_52w = latest.get("low_52w")
+
+        # Directional arrow based on 1D change
+        if r1d is not None and not np.isnan(float(r1d)):
+            arrow = "▲" if float(r1d) >= 0 else "▼"
+        else:
+            arrow = "—"
+
+        range_str = "—"
+        if high_52w and low_52w:
+            range_str = f"{_safe_float(low_52w, decimals)} – {_safe_float(high_52w, decimals)}"
 
         rows.append({
             "Instrument": inst,
             value_col_label: _safe_float(latest.get("value"), decimals),
+            "Dir": arrow,
             "1D Change": _fmt_change(r1d, is_rate=is_rate),
             "1M Change": _fmt_change(r1m, is_rate=is_rate),
             "Vol (30D)": _safe_float(latest.get("vol_30d"), 2) if latest.get("vol_30d") else "—",
             "Z-Score": _safe_float(latest.get("z_score"), 2),
-            "Percentile": _safe_float(latest.get("percentile"), 1),
+            "52W Range": range_str,
         })
 
     return pd.DataFrame(rows)
 
 
+def style_summary_table(df: pd.DataFrame):
+    """Style summary table cells for Binance Light Theme (#ffffff surface, light headers, same accents)."""
+    if df.empty:
+        return df
+
+    styler = df.style.set_properties(**{
+        'background-color': '#ffffff',
+        'color': '#181a20',
+        'border-color': '#eaecef'
+    }).set_table_styles([
+        {'selector': 'th', 'props': [('background-color', '#fafafa'), ('color', '#707a8a'), ('font-weight', '600'), ('border-bottom', '1px solid #eaecef')]},
+        {'selector': 'td', 'props': [('border-bottom', '1px solid #eaecef'), ('background-color', '#ffffff'), ('color', '#181a20')]}
+    ])
+
+    def style_change_cell(val):
+        val_str = str(val).strip()
+        if val_str.startswith("+"):
+            return "color: #0ecb81; font-weight: 600; background-color: rgba(14, 203, 129, 0.12);"
+        elif val_str.startswith("-"):
+            return "color: #f6465d; font-weight: 600; background-color: rgba(246, 70, 93, 0.12);"
+        return "background-color: #ffffff; color: #181a20;"
+
+    def style_dir_cell(val):
+        val_str = str(val).strip()
+        if "▲" in val_str:
+            return "color: #0ecb81; font-weight: 700; background-color: #ffffff;"
+        elif "▼" in val_str:
+            return "color: #f6465d; font-weight: 700; background-color: #ffffff;"
+        return "background-color: #ffffff; color: #181a20;"
+
+    map_func = getattr(styler, "map", getattr(styler, "applymap", None))
+    if map_func:
+        cols_to_style = [col for col in ["1D Change", "1M Change"] if col in df.columns]
+        if cols_to_style:
+            styler = map_func(style_change_cell, subset=cols_to_style)
+        if "Dir" in df.columns:
+            styler = map_func(style_dir_cell, subset=["Dir"])
+
+    return styler
+
+
 # ---------------------------------------------------------------------------
-# Trailing price/yield chart (Base SaaS curved spline aesthetic)
+# Trailing price/yield chart (Binance Light aesthetic)
 # ---------------------------------------------------------------------------
 
 def plot_trailing_chart(metrics_df: pd.DataFrame, asset: str,
                         y_label: str = "Value",
-                        trailing_days: int = 252) -> go.Figure:
-    """Create a sleek, smooth Plotly line chart matching the Base UI kit."""
+                        trailing_days: int = 252,
+                        auto_color: bool = False) -> go.Figure:
+    """Create a sleek, smooth Plotly line chart with Binance light canvas."""
     subset = metrics_df[metrics_df["asset"] == asset].sort_values("date")
     if len(subset) > trailing_days:
         subset = subset.tail(trailing_days)
+
+    line_color = "#1e40af"
+    fill_color = "rgba(30, 64, 175, 0.08)"
+
+    if auto_color and not subset.empty:
+        first_val = subset.iloc[0]["value"]
+        last_val = subset.iloc[-1]["value"]
+        if last_val >= first_val:
+            line_color = "#0ecb81"  # Binance Trading Up Green
+            fill_color = "rgba(14, 203, 129, 0.08)"
+        else:
+            line_color = "#f6465d"  # Binance Trading Down Red
+            fill_color = "rgba(246, 70, 93, 0.08)"
 
     fig = go.Figure()
     fig.add_trace(go.Scatter(
@@ -150,34 +235,48 @@ def plot_trailing_chart(metrics_df: pd.DataFrame, asset: str,
         y=subset["value"],
         mode="lines",
         name=asset,
-        line=dict(color="#4318FF", width=3, shape="spline"),
+        line=dict(color=line_color, width=2.5, shape="spline"),
         fill="tozeroy",
-        fillcolor="rgba(67, 24, 255, 0.05)",
+        fillcolor=fill_color,
         hovertemplate="<b>%{x|%b %d, %Y}</b><br>" + y_label + ": %{y:,.2f}<extra></extra>"
     ))
 
+    if trailing_days >= 252:
+        title_text = f"{asset} Historical Performance (Trailing {trailing_days // 252}Y)"
+    elif trailing_days <= 30:
+        title_text = f"{asset} Trailing 1 Month Performance"
+    else:
+        title_text = f"{asset} Historical Performance ({trailing_days} Days)"
+
     fig.update_layout(
         title=dict(
-            text=f"{asset} Historical Performance (Trailing {trailing_days // 252}Y)" if trailing_days >= 252 else f"{asset} Historical",
-            font=dict(size=14, color="#2B3674", family="sans-serif")
+            text=title_text,
+            font=dict(size=14, color="#181a20", family="Inter, -apple-system, sans-serif")
         ),
-        xaxis_title=None,
-        yaxis_title=y_label,
+        xaxis=dict(
+            showgrid=True, gridcolor="#eaecef", zeroline=False, linecolor="#eaecef",
+            tickfont=dict(color="#707a8a", size=11, family="Inter, sans-serif")
+        ),
+        yaxis=dict(
+            title=dict(text=y_label, font=dict(color="#707a8a", size=12)),
+            showgrid=True, gridcolor="#eaecef", zeroline=False, linecolor="#eaecef",
+            tickfont=dict(color="#707a8a", size=11, family="Inter, sans-serif")
+        ),
         height=320,
         margin=dict(l=30, r=20, t=40, b=20),
         hovermode="x unified",
-        paper_bgcolor="#FFFFFF",
-        plot_bgcolor="#FFFFFF"
+        paper_bgcolor="#ffffff",
+        plot_bgcolor="#ffffff"
     )
     return fig
 
 
 # ---------------------------------------------------------------------------
-# JGB yield curve chart (Base SaaS aesthetic)
+# JGB yield curve chart (Binance Light aesthetic)
 # ---------------------------------------------------------------------------
 
 def plot_yield_curve(conn) -> go.Figure:
-    """Plot the current JGB yield curve with smooth interpolation."""
+    """Plot the current JGB yield curve with Binance light canvas."""
     query = """
         SELECT tenor, yield_pct, date
         FROM jgb_yields
@@ -205,7 +304,7 @@ def plot_yield_curve(conn) -> go.Figure:
 
     if df.empty:
         fig = go.Figure()
-        fig.add_annotation(text="No JGB data available", showarrow=False)
+        fig.add_annotation(text="No JGB data available", showarrow=False, font=dict(color="#707a8a"))
         return fig
 
     dashboard_df = df[df["tenor"].isin(JGB_DASHBOARD_TENORS)]
@@ -222,34 +321,42 @@ def plot_yield_curve(conn) -> go.Figure:
         y=dashboard_df["yield_pct"],
         mode="lines+markers",
         name="Yield Curve",
-        line=dict(width=3, color="#4318FF", shape="spline"),
-        marker=dict(size=9, color="#4318FF", line=dict(color="#FFFFFF", width=2)),
+        line=dict(width=2.5, color="#1e40af", shape="spline"),
+        marker=dict(size=8, color="#1e40af", line=dict(color="#ffffff", width=2)),
         fill="tozeroy",
-        fillcolor="rgba(67, 24, 255, 0.05)",
+        fillcolor="rgba(30, 64, 175, 0.08)",
         hovertemplate="<b>%{x} Tenor</b><br>Yield: %{y:.3f}%<extra></extra>"
     ))
 
     fig.update_layout(
         title=dict(
             text=f"Benchmark JGB Yield Curve ({curve_date})",
-            font=dict(size=14, color="#2B3674", family="sans-serif")
+            font=dict(size=14, color="#181a20", family="Inter, -apple-system, sans-serif")
         ),
-        xaxis_title="Tenor",
-        yaxis_title="Yield (%)",
+        xaxis=dict(
+            title=dict(text="Tenor", font=dict(color="#707a8a", size=12)),
+            showgrid=True, gridcolor="#eaecef", zeroline=False, linecolor="#eaecef",
+            tickfont=dict(color="#707a8a", size=11)
+        ),
+        yaxis=dict(
+            title=dict(text="Yield (%)", font=dict(color="#707a8a", size=12)),
+            showgrid=True, gridcolor="#eaecef", zeroline=False, linecolor="#eaecef",
+            tickfont=dict(color="#707a8a", size=11)
+        ),
         height=360,
         margin=dict(l=30, r=20, t=50, b=30),
-        paper_bgcolor="#FFFFFF",
-        plot_bgcolor="#FFFFFF"
+        paper_bgcolor="#ffffff",
+        plot_bgcolor="#ffffff"
     )
     return fig
 
 
 # ---------------------------------------------------------------------------
-# Market Regime gauges (Base SaaS modern radial gauges)
+# Market Regime gauges (Binance light theme)
 # ---------------------------------------------------------------------------
 
 def render_market_regime(metrics_df: pd.DataFrame):
-    """Render the Market Regime section with clean, modern radial gauges."""
+    """Render the Market Regime section with Binance light indicators."""
     st.subheader("Market Regime Indicators")
     st.caption(
         "Average absolute z-score across tracked instruments (trailing 5Y window). "
@@ -271,17 +378,17 @@ def render_market_regime(metrics_df: pd.DataFrame):
         "FX Volatility Stress": {
             "class": "FX",
             "instruments": ["USDJPY", "EURJPY", "AUDJPY"],
-            "color": "#4318FF",
+            "color": "#1e40af",
         },
         "Commodity Price Pressure": {
             "class": "COMMODITY",
             "instruments": ["WTI", "BRENT", "COPPER", "ALUMINIUM"],
-            "color": "#FFB547",
+            "color": "#f6465d",
         },
         "Rates & Curve Pressure": {
             "class": "RATE",
             "instruments": JGB_DASHBOARD_TENORS,
-            "color": "#01B574",
+            "color": "#0ecb81",
         },
     }
 
@@ -299,20 +406,20 @@ def render_market_regime(metrics_df: pd.DataFrame):
             fig = go.Figure(go.Indicator(
                 mode="gauge+number",
                 value=avg_abs_z,
-                title={"text": label, "font": {"size": 14, "color": "#2B3674", "family": "sans-serif"}},
-                number={"suffix": "σ", "valueformat": ".2f", "font": {"size": 28, "color": "#2B3674", "family": "sans-serif"}},
+                title={"text": label, "font": {"size": 13, "color": "#181a20", "family": "Inter, sans-serif"}},
+                number={"suffix": "σ", "valueformat": ".2f", "font": {"size": 26, "color": "#181a20", "family": "Inter, sans-serif"}},
                 gauge={
-                    "axis": {"range": [0, 3], "tickwidth": 1, "tickcolor": "#A3AED0"},
-                    "bar": {"color": info["color"], "thickness": 0.3},
-                    "bgcolor": "#F4F7FE",
+                    "axis": {"range": [0, 3], "tickwidth": 1, "tickcolor": "#707a8a"},
+                    "bar": {"color": info["color"], "thickness": 0.28},
+                    "bgcolor": "#ffffff",
                     "borderwidth": 0,
                     "steps": [
-                        {"range": [0, 1], "color": "#F4F7FE"},
-                        {"range": [1, 2], "color": "#EDF2F7"},
-                        {"range": [2, 3], "color": "#FEEFE7"},
+                        {"range": [0, 1], "color": "#fafafa"},
+                        {"range": [1, 2], "color": "#f1f5f9"},
+                        {"range": [2, 3], "color": "#fde8ef"},
                     ],
                     "threshold": {
-                        "line": {"color": "#EE5D50", "width": 3},
+                        "line": {"color": "#f6465d", "width": 2.5},
                         "thickness": 0.8,
                         "value": 2.5,
                     },
@@ -321,18 +428,30 @@ def render_market_regime(metrics_df: pd.DataFrame):
             fig.update_layout(
                 height=220, 
                 margin=dict(l=20, r=20, t=40, b=10),
-                paper_bgcolor="#FFFFFF",
-                plot_bgcolor="#FFFFFF"
+                paper_bgcolor="#ffffff",
+                plot_bgcolor="#ffffff"
             )
             st.plotly_chart(fig, use_container_width=True)
-
+            
+    # Compute insight
+    highest_z_asset = latest_per_asset.loc[latest_per_asset['z_score'].abs().idxmax()]
+    highest_z_val = highest_z_asset['z_score']
+    
+    if abs(highest_z_val) > 2.0:
+        insight_msg = f"Market Alert: <strong>{highest_z_asset['asset']}</strong> is experiencing extreme stress with a Z-score of <strong>{highest_z_val:.2f}σ</strong>, indicating significant deviation from historical norms."
+    elif abs(highest_z_val) > 1.0:
+        insight_msg = f"Elevated Volatility: <strong>{highest_z_asset['asset']}</strong> is the primary risk driver (Z-score <strong>{highest_z_val:.2f}σ</strong>), trading outside normal historical bands."
+    else:
+        insight_msg = f"Normal Conditions: All asset classes are currently trading within standard historical bands (max stress: {highest_z_asset['asset']} at {highest_z_val:.2f}σ)."
+        
+    render_insight(insight_msg)
 
 # ---------------------------------------------------------------------------
-# Mercury Balance Hero Chart
+# Stripi Balance Hero Chart
 # ---------------------------------------------------------------------------
 
 def plot_mercury_balance_chart(dates=None, values=None) -> go.Figure:
-    """Create a sleek, smooth spline chart matching the Mercury Balance hero chart."""
+    """Create a sleek, smooth spline chart matching the Stripi balance trajectory."""
     if dates is None or values is None or len(dates) == 0:
         dates = pd.date_range(start="2024-07-25", periods=32, freq="D")
         t = np.linspace(0, 1, 32)
@@ -350,11 +469,11 @@ def plot_mercury_balance_chart(dates=None, values=None) -> go.Figure:
         x=dates,
         y=values,
         mode="lines",
-        name="Mercury Balance",
-        line=dict(color="#4318FF", width=2.5, shape="spline", smoothing=1.3),
+        name="Balance Trajectory",
+        line=dict(color="#533afd", width=2.5, shape="spline", smoothing=1.3),
         fill="tozeroy",
-        fillcolor="rgba(67, 24, 255, 0.04)",
-        hovertemplate="<b>%{x|%b %d, %Y}</b><br>Balance: $%{y:,.2f}<extra></extra>"
+        fillcolor="rgba(83, 58, 253, 0.04)",
+        hovertemplate="<b>%{x|%b %d, %Y}</b><br>Value: ¥%{y:,.2f}<extra></extra>"
     ))
 
     fig.update_layout(
@@ -365,7 +484,7 @@ def plot_mercury_balance_chart(dates=None, values=None) -> go.Figure:
             tickmode="auto",
             nticks=5,
             tickformat="%b %d",
-            tickfont=dict(color="#9CA3AF", size=11, family="sans-serif"),
+            tickfont=dict(color="#64748d", size=11, family="Inter, -apple-system, sans-serif"),
         ),
         yaxis=dict(
             showgrid=False,

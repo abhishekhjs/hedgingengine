@@ -1,4 +1,4 @@
-﻿"""UI components for Phase 2: Company Exposure Mapping."""
+"""UI components for Phase 2: Company Exposure Mapping."""
 import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
@@ -36,13 +36,7 @@ TOYOTA_FINANCIALS = {
 
 def load_company_names() -> list[str]:
     """Get a list of all unique companies currently in the database."""
-    with get_connection() as conn:
-        df1 = pd.read_sql("SELECT DISTINCT company_name FROM company_exposure", conn)
-        df2 = pd.read_sql("SELECT DISTINCT company_name FROM hedges", conn)
-    companies = set(df1["company_name"].tolist() + df2["company_name"].tolist())
-    if not companies:
-        companies.add("Toyota Motor (Case Study)")
-    return sorted(list(companies))
+    return ["Toyota (Real FY24)"]
 
 
 def load_exposure_data(company_name: str) -> pd.DataFrame:
@@ -111,10 +105,11 @@ def seed_toyota():
 
 def _rag_color(coverage: float) -> str:
     if coverage >= 0.60:
-        return "#01B574"
+        return "#059669"
     elif coverage >= 0.30:
-        return "#FFB547"
-    return "#EE5D50"
+        return "#665efd"
+    return "#ea2261"
+
 
 
 def render_exposure_mapping_tab():
@@ -242,6 +237,18 @@ def render_exposure_mapping_tab():
                   delta_color="normal")
         c3.metric("1-Sigma Shock Impact", f"JPY {shock_total / 1e9:,.2f} B", delta_color="inverse")
 
+        # Insight
+        if gross_total > 0:
+            from src.dashboard.components import render_insight
+            total_hedged = gross_total - net_total
+            coverage_pct = (total_hedged / gross_total) * 100
+            
+            top_cat = max(cat_totals, key=cat_totals.get)
+            top_val = cat_totals[top_cat]
+            
+            insight_msg = f"Exposure Overview: Total gross risk is <strong>JPY {gross_total/1e9:,.1f} Billion</strong>. We are currently hedging <strong>{coverage_pct:.1f}%</strong> of this risk, leaving a net exposure of <strong>JPY {net_total/1e9:,.1f} Billion</strong>. Our largest risk factor is <strong>{top_cat}</strong> (JPY {top_val/1e9:,.1f}B gross)."
+            render_insight(insight_msg)
+
         st.markdown("---")
 
         col_donut, col_cov = st.columns([1, 2])
@@ -256,15 +263,15 @@ def render_exposure_mapping_tab():
                     labels=donut_labels,
                     values=donut_values,
                     hole=0.55,
-                    marker=dict(colors=["#4318FF", "#01B574", "#FFB547"],
-                                line=dict(color="#FFFFFF", width=2)),
+                    marker=dict(colors=["#533afd", "#665efd", "#ea2261"],
+                                line=dict(color="#ffffff", width=2)),
                     textinfo="label+percent",
-                    hovertemplate="%{label}<br>JPY %{value:,.0f}<extra></extra>",
+                    hovertemplate="%{label}<br>¥%{value:,.0f}<extra></extra>",
                 ))
                 fig_donut.update_layout(
                     height=260,
                     margin=dict(l=10, r=10, t=20, b=10),
-                    paper_bgcolor="#FFFFFF",
+                    paper_bgcolor="#ffffff",
                     showlegend=False,
                 )
                 st.plotly_chart(fig_donut, use_container_width=True)
@@ -272,7 +279,7 @@ def render_exposure_mapping_tab():
         # --- Hedge Coverage Bars ---
         with col_cov:
             st.markdown("#### Hedge Coverage by Factor")
-            st.caption("Red < 30%  |  Amber 30–60%  |  Green > 60%")
+            st.caption("Ruby < 30%  |  Lavender 30–60%  |  Emerald > 60%")
             for factor, cov_data in coverage_ratios.items():
                 cov = cov_data["coverage"]
                 gross = cov_data["gross_jpy"]
@@ -283,15 +290,15 @@ def render_exposure_mapping_tab():
                 st.markdown(
                     f"""
                     <div style="margin-bottom:10px;">
-                      <div style="display:flex;justify-content:space-between;font-size:12px;color:#374151;margin-bottom:3px;">
-                        <span style="font-weight:600;">{factor}</span>
-                        <span style="color:{color};font-weight:700;">{pct:.0f}%</span>
+                      <div style="display:flex;justify-content:space-between;font-size:12px;color:#273951;margin-bottom:3px;">
+                        <span style="font-weight:500;">{factor}</span>
+                        <span style="color:{color};font-weight:600;font-feature-settings:'tnum' 1;">{pct:.0f}%</span>
                       </div>
-                      <div style="background:#F3F5F9;border-radius:6px;height:10px;overflow:hidden;">
+                      <div style="background:#f6f9fc;border:1px solid #e3e8ee;border-radius:6px;height:10px;overflow:hidden;">
                         <div style="background:{color};width:{min(pct,100):.0f}%;height:100%;border-radius:6px;transition:width 0.4s;"></div>
                       </div>
-                      <div style="font-size:11px;color:#9CA3AF;margin-top:2px;">
-                        JPY {cov_data["hedged_jpy"]/1e9:.1f}B hedged of JPY {gross/1e9:.1f}B gross
+                      <div style="font-size:11px;color:#64748d;margin-top:2px;font-feature-settings:'tnum' 1;">
+                        ¥{cov_data["hedged_jpy"]/1e9:.1f}B hedged of ¥{gross/1e9:.1f}B gross
                       </div>
                     </div>
                     """,
@@ -309,21 +316,21 @@ def render_exposure_mapping_tab():
                 x=["Gross Risk", "Hedges Applied", "Net Unhedged Risk"],
                 textposition="outside",
                 text=[
-                    f"JPY {gross_total/1e9:,.1f}B",
-                    f"-JPY {hedged_delta/1e9:,.1f}B",
-                    f"JPY {net_total/1e9:,.1f}B",
+                    f"¥{gross_total/1e9:,.1f}B",
+                    f"-¥{hedged_delta/1e9:,.1f}B",
+                    f"¥{net_total/1e9:,.1f}B",
                 ],
                 y=[gross_total, -hedged_delta, net_total],
-                increasing={"marker": {"color": "#EE5D50"}},
-                decreasing={"marker": {"color": "#01B574"}},
-                totals={"marker": {"color": "#4318FF"}},
-                connector={"line": {"color": "#E9EDF7", "width": 2}},
+                increasing={"marker": {"color": "#ea2261"}},
+                decreasing={"marker": {"color": "#059669"}},
+                totals={"marker": {"color": "#533afd"}},
+                connector={"line": {"color": "#e3e8ee", "width": 1.5}},
             ))
             fig.update_layout(
                 height=340,
                 margin=dict(l=30, r=20, t=40, b=30),
-                paper_bgcolor="#FFFFFF",
-                plot_bgcolor="#FFFFFF",
+                paper_bgcolor="#ffffff",
+                plot_bgcolor="#ffffff",
                 showlegend=False,
             )
             st.plotly_chart(fig, use_container_width=True)

@@ -101,3 +101,21 @@ COMMODITY_UNITS = {
     'COPPER': 'USD/lb',
     'ALUMINIUM': 'USD/metric_ton',
 }
+
+# Finnhub API
+def get_finnhub_api_key() -> str:
+    """Get Finnhub API key from environment."""
+    key = os.environ.get('FINNHUB_API_KEY', '').strip()
+    if not key:
+        raise ValueError("FINNHUB_API_KEY not set in .env")
+    return key
+
+# Finnhub websocket FX symbol mappings (OANDA format)
+FINNHUB_FX_SYMBOLS = {
+    'USDJPY': 'OANDA:USD_JPY',
+    'EURJPY': 'OANDA:EUR_JPY',
+    'AUDJPY': 'OANDA:AUD_JPY',
+}
+
+# Autorefresh interval for live FX panel (milliseconds)
+LIVE_FX_REFRESH_MS = 5000

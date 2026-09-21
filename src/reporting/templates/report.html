@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Master Risk Check-up Report</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        :root {
+            --primary: #533afd;
+            --primary-soft: #665efd;
+            --danger: #ea2261;
+            --ink: #0d253d;
+            --ink-mute: #64748d;
+            --canvas: #ffffff;
+            --canvas-soft: #f6f9fc;
+            --border: #e3e8ee;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            color: var(--ink);
+            background-color: var(--canvas);
+            margin: 0;
+            padding: 0;
+            font-size: 14px;
+            line-height: 1.5;
+            -webkit-print-color-adjust: exact;
+        }
+
+        /* Page breaks */
+        .page-break {
+            page-break-before: always;
+            break-before: page;
+        }
+
+        /* A4 Page constraints for Playwright PDF */
+        .page {
+            padding: 40px;
+            position: relative;
+        }
+
+        /* Typography */
+        h1 { font-size: 32px; font-weight: 300; letter-spacing: -1px; margin-bottom: 8px; color: var(--ink); }
+        h2 { font-size: 24px; font-weight: 300; letter-spacing: -0.5px; margin-top: 32px; margin-bottom: 16px; border-bottom: 1px solid var(--border); padding-bottom: 8px; color: var(--primary); page-break-after: avoid; break-after: avoid; }
+        h3 { font-size: 18px; font-weight: 500; margin-top: 24px; margin-bottom: 12px; color: var(--ink); page-break-after: avoid; break-after: avoid; }
+        p, div { color: var(--ink); margin-bottom: 16px; }
+
+        .timestamp { font-size: 13px; color: var(--ink-mute); font-family: monospace; }
+        
+        /* Stripi Insights */
+        .insight-card {
+            background-color: var(--canvas-soft);
+            border: 1px solid var(--border);
+            border-left: 4px solid var(--primary);
+            border-radius: 8px;
+            padding: 16px 20px;
+            margin: 20px 0;
+            font-size: 14px;
+            line-height: 1.6;
+            page-break-inside: avoid;
+            break-inside: avoid;
+        }
+        .insight-card strong { color: var(--primary); font-weight: 600; }
+        
+        /* Metric Cards */
+        .metric-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 32px;
+            page-break-inside: avoid;
+            break-inside: avoid;
+        }
+        .metric-card {
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px;
+            background: var(--canvas);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .metric-label { font-size: 12px; color: var(--ink-mute); margin-bottom: 8px; text-transform: uppercase; font-weight: 600; }
+        .metric-value { font-size: 24px; font-weight: 400; color: var(--ink); font-variant-numeric: tabular-nums; }
+        
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 16px 0;
+            font-size: 13px;
+            page-break-inside: avoid;
+            break-inside: avoid;
+        }
+        th { text-align: left; padding: 12px 8px; border-bottom: 2px solid var(--border); color: var(--ink-mute); font-weight: 600; text-transform: uppercase; font-size: 11px; }
+        td { padding: 12px 8px; border-bottom: 1px solid var(--border); color: var(--ink); font-variant-numeric: tabular-nums; }
+        .text-right { text-align: right; }
+
+        /* Images */
+        .chart-container {
+            width: 100%;
+            margin: 20px 0;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            overflow: hidden;
+            padding: 16px;
+            box-sizing: border-box;
+            background: #fff;
+            text-align: center;
+            page-break-inside: avoid;
+            break-inside: avoid;
+        }
+        .chart-container img { max-width: 100%; height: auto; display: inline-block; }
+        .chart-title { font-size: 15px; font-weight: 600; margin-bottom: 12px; color: var(--ink); text-align: left; }
+        
+        .header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 40px; }
+        
+        .badge { display: inline-block; padding: 4px 10px; background: rgba(83, 58, 253, 0.1); color: var(--primary); border-radius: 999px; font-size: 11px; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 12px; }
+    </style>
+</head>
+<body>
+
+    <!-- Cover Page -->
+    <div class="page">
+        <div class="header">
+            <div>
+                <span class="badge">FINANCIAL INFRASTRUCTURE</span>
+                <h1>Master Risk Check-up</h1>
+                <p style="color: var(--ink-mute); font-size: 16px;">Exhaustive Corporate Financial Risk Analytics</p>
+            </div>
+            <div class="timestamp">Run Date: {{ timestamp }}</div>
+        </div>
+
+        <div class="insight-card" style="border-left-color: var(--ink);">
+            <div style="font-size: 16px; font-weight: 500; margin-bottom: 8px; color: var(--ink);">Executive Summary</div>
+            <div>{{ exec_summary }}</div>
+        </div>
+
+        <div class="metric-grid">
+            <div class="metric-card">
+                <div class="metric-label">Total Gross Risk</div>
+                <div class="metric-value">¥{{ "%.1f"|format(total_gross / 1e9) }}B</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Total Hedged</div>
+                <div class="metric-value">¥{{ "%.1f"|format(total_hedged / 1e9) }}B</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Net Exposure Gap</div>
+                <div class="metric-value">¥{{ "%.1f"|format(net_exposure / 1e9) }}B</div>
+            </div>
+            <div class="metric-card" style="border-color: var(--danger);">
+                <div class="metric-label" style="color: var(--danger);">95% CFaR Risk</div>
+                <div class="metric-value">¥{{ "%.1f"|format(cfar_95 / 1e9) }}B</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 1: Market Regime -->
+    <div class="page page-break">
+        <h2>1. Market Regime Analysis</h2>
+        <p>Analysis of current macroeconomic stress, tracking historical volatility, z-scores, and cross-asset deviations.</p>
+        
+        <div class="insight-card">
+            <div>{{ insight_market }}</div>
+        </div>
+        
+        {% if fig_yield_curve %}
+        <div class="chart-container">
+            <div class="chart-title">JGB Benchmark Yield Curve</div>
+            <img src="data:image/png;base64,{{ fig_yield_curve }}" />
+        </div>
+        {% endif %}
+
+        {% if fig_trailing %}
+        <div class="chart-container">
+            <div class="chart-title">Trailing 1Y Performance (Highest Volatility Asset: {{ highest_z_asset_name }})</div>
+            <img src="data:image/png;base64,{{ fig_trailing }}" />
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Section 2: Corporate Exposure -->
+    <div class="page page-break">
+        <h2>2. Corporate Exposure Reconciliation</h2>
+        <p>Exhaustive mapping of underlying imports/debt versus active hedge instruments, calculating exact unhedged gaps.</p>
+        
+        <div class="insight-card">
+            <div>{{ insight_exposure }}</div>
+        </div>
+
+        <h3>Active Hedge Instruments Log</h3>
+        {% if hedges %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Instrument</th>
+                    <th>Underlying Asset</th>
+                    <th class="text-right">Notional Amount</th>
+                    <th class="text-right">Strike Price</th>
+                    <th>Maturity Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for hedge in hedges %}
+                <tr>
+                    <td>{{ hedge.instrument }}</td>
+                    <td>{{ hedge.underlying }}</td>
+                    <td class="text-right">¥{{ "%.1f"|format(hedge.notional / 1e9) }}B</td>
+                    <td class="text-right">{{ hedge.strike }}</td>
+                    <td>{{ hedge.maturity }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p>No active hedges configured.</p>
+        {% endif %}
+    </div>
+
+    <!-- Section 3: Financial Transmission -->
+    <div class="page page-break">
+        <h2>3. Financial Transmission & Sensitivities</h2>
+        <p>Modeling the direct impact of 1-sigma market shocks on the company's Income Statement and Enterprise Value.</p>
+        
+        <div class="insight-card">
+            <div>{{ insight_transmission }}</div>
+        </div>
+        
+        {% if fig_tornado %}
+        <div class="chart-container">
+            <div class="chart-title">Tornado Sensitivity Chart (EV Impact per 1σ Shock)</div>
+            <img src="data:image/png;base64,{{ fig_tornado }}" />
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Section 4: Monte Carlo Tail Risk -->
+    <div class="page page-break">
+        <h2>4. Monte Carlo Tail Risk Simulation</h2>
+        <p>Full 10,000-iteration probability distributions predicting exact liquidity shortfalls based on historical covariance.</p>
+        
+        <div class="insight-card">
+            <div>{{ insight_montecarlo }}</div>
+        </div>
+        
+        {% if fig_cfar %}
+        <div class="chart-container">
+            <div class="chart-title">Cash Flow at Risk (CFaR) Histogram Distribution</div>
+            <img src="data:image/png;base64,{{ fig_cfar }}" />
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Section 5: Optimization -->
+    <div class="page page-break">
+        <h2>5. Strategic Hedge Optimization</h2>
+        <p>Calculated priority scoring matrix directing exact actions to maximize Enterprise Value preservation within covenant constraints.</p>
+        
+        <div class="insight-card">
+            <div>{{ insight_optimization }}</div>
+        </div>
+
+        <h3>Hedge Priority Ranking Matrix</h3>
+        {% if priorities %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Risk Factor</th>
+                    <th>Class</th>
+                    <th class="text-right">Priority Score</th>
+                    <th class="text-right">Current Coverage</th>
+                    <th>Recommended Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in priorities %}
+                <tr>
+                    <td style="font-weight: 500;">{{ p.Factor }}</td>
+                    <td>{{ p.Category }}</td>
+                    <td class="text-right" style="color: var(--danger); font-weight: 600;">{{ "%.3f"|format(p['HedgePriority Score']) }}</td>
+                    <td class="text-right">{{ "%.1f"|format(p['Coverage %']) }}%</td>
+                    <td>{{ p.Action }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p>No optimization data available.</p>
+        {% endif %}
+
+        {% if fig_frontier %}
+        <div class="chart-container">
+            <div class="chart-title">2D Efficient Frontier (CFaR Optimization vs. Hedge Ratio)</div>
+            <img src="data:image/png;base64,{{ fig_frontier }}" />
+        </div>
+        {% endif %}
+    </div>
+
+</body>
+</html>

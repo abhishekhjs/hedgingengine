@@ -108,6 +108,16 @@ CREATE_TABLES_SQL = [
         max_debt_ebitda_ratio REAL DEFAULT 0
     )
     """,
+    """
+    CREATE TABLE IF NOT EXISTS fx_rates_live (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        symbol TEXT NOT NULL,
+        price REAL NOT NULL,
+        prev_price REAL,
+        timestamp TEXT NOT NULL,
+        ingested_at TEXT NOT NULL
+    )
+    """,
 ]
 
 # Indexes for query performance
@@ -120,6 +130,7 @@ CREATE_INDEXES_SQL = [
     'CREATE INDEX IF NOT EXISTS idx_jgb_yields_tenor ON jgb_yields(tenor)',
     'CREATE INDEX IF NOT EXISTS idx_risk_metrics_date ON risk_metrics(date)',
     'CREATE INDEX IF NOT EXISTS idx_risk_metrics_asset ON risk_metrics(asset_class, asset)',
+    'CREATE INDEX IF NOT EXISTS idx_fx_rates_live_symbol ON fx_rates_live(symbol, timestamp)',
 ]
 
 

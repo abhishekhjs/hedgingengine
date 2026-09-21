@@ -33,512 +33,353 @@ import plotly.express as px
 # ---------------------------------------------------------------------------
 # 1. Page Config
 # ---------------------------------------------------------------------------
+# 1. Page Config
+# ---------------------------------------------------------------------------
 st.set_page_config(
-    page_title="IFSA Risk Resilience Engine", 
-    page_icon="⚡", 
+    page_title="IFSA Market Risk Engine", 
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
 # ---------------------------------------------------------------------------
-# 2. Mercury Plotly Theme
+# 2. Plotly Theme (Light Mode with Darkish Blue Accent)
 # ---------------------------------------------------------------------------
-mercury_palette = ["#4318FF", "#01B574", "#FFB547", "#EA3A99", "#3965FF", "#7551FF"]
+# Palette: Darkish Blue, Trading Up Green, Trading Down Red, Info Blue, Accent Turquoise, Muted
+binance_palette = ["#1e40af", "#0ecb81", "#f6465d", "#3b82f6", "#2dbdb6", "#707a8a"]
 
-mercury_template = go.layout.Template()
-mercury_template.layout.paper_bgcolor = "#FFFFFF"
-mercury_template.layout.plot_bgcolor = "#FFFFFF"
-mercury_template.layout.font = dict(family="Plus Jakarta Sans, Inter, sans-serif", color="#111827", size=12)
-mercury_template.layout.colorway = mercury_palette
-mercury_template.layout.xaxis = dict(
+binance_template = go.layout.Template()
+binance_template.layout.paper_bgcolor = "#ffffff"
+binance_template.layout.plot_bgcolor = "#ffffff"
+binance_template.layout.font = dict(family="Inter, -apple-system, system-ui, sans-serif", color="#181a20", size=12)
+binance_template.layout.colorway = binance_palette
+binance_template.layout.xaxis = dict(
     showgrid=True,
-    gridcolor="#F3F5F9",
+    gridcolor="#eaecef",
     zeroline=False,
-    linecolor="#E5E7EB",
-    tickfont=dict(color="#9CA3AF", size=11)
+    linecolor="#eaecef",
+    tickfont=dict(color="#707a8a", size=11, family="Inter, sans-serif")
 )
-mercury_template.layout.yaxis = dict(
+binance_template.layout.yaxis = dict(
     showgrid=True,
-    gridcolor="#F3F5F9",
+    gridcolor="#eaecef",
     zeroline=False,
-    linecolor="#E5E7EB",
-    tickfont=dict(color="#9CA3AF", size=11)
+    linecolor="#eaecef",
+    tickfont=dict(color="#707a8a", size=11, family="Inter, sans-serif")
 )
 
-pio.templates["mercury"] = mercury_template
-pio.templates.default = "mercury"
+pio.templates["binance"] = binance_template
+pio.templates.default = "binance"
 
 # ---------------------------------------------------------------------------
-# 3. Mercury Custom CSS
+# 3. Binance Design System Custom CSS (Light Mode with same accents)
 # ---------------------------------------------------------------------------
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
-    html, body, [class*="css"] {
-        font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
+    html, body, [class*="css"], .stApp {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+        font-feature-settings: "ss01" 1 !important;
+        color: #181a20 !important;
+        -webkit-font-smoothing: antialiased !important;
     }
 
-    /* Ambient background gradient matching Mercury dashboard */
+    /* Binance Canvas Light (#ffffff) */
     .stApp {
-        background: radial-gradient(circle at 95% 95%, rgba(222, 230, 255, 0.55) 0%, rgba(246, 248, 254, 0.8) 45%, #F9FAFC 100%) !important;
-        background-attachment: fixed !important;
+        background-color: #ffffff !important;
+        background-image: none !important;
     }
 
-    /* Main container padding */
+    /* Streamlit Top Header Bar Light Theme */
+    header[data-testid="stHeader"], [data-testid="stHeader"], header {
+        background-color: #ffffff !important;
+        background: #ffffff !important;
+        border-bottom: 1px solid #eaecef !important;
+    }
+    div[data-testid="stDecoration"] {
+        background-image: linear-gradient(90deg, #1e40af, #3b82f6) !important;
+    }
+    header[data-testid="stHeader"] *, [data-testid="stHeader"] button, [data-testid="stHeader"] svg {
+        color: #181a20 !important;
+        fill: #181a20 !important;
+    }
+
+    /* Tighter main container */
     .main .block-container {
-        padding-top: 1.25rem !important;
-        padding-bottom: 3rem !important;
-        padding-left: 2.25rem !important;
-        padding-right: 2.25rem !important;
-        max-width: 1440px !important;
+        padding-top: 0.75rem !important;
+        padding-bottom: 2rem !important;
+        padding-left: 1.25rem !important;
+        padding-right: 1.25rem !important;
+        max-width: 1600px !important;
     }
 
-    /* Sidebar Styling */
+    /* Binance Typography (Light Theme) */
+    h1 { font-size: 32px !important; font-weight: 700 !important; letter-spacing: -0.6px !important; color: #181a20 !important; margin-bottom: 6px !important; }
+    h2 { font-size: 24px !important; font-weight: 600 !important; letter-spacing: -0.4px !important; color: #181a20 !important; margin-top: 18px !important; margin-bottom: 6px !important; }
+    h3 { font-size: 19px !important; font-weight: 600 !important; letter-spacing: -0.2px !important; color: #181a20 !important; margin-top: 14px !important; margin-bottom: 4px !important; }
+    h4, h5, h6 { font-size: 16px !important; font-weight: 600 !important; color: #181a20 !important; margin-top: 8px !important; margin-bottom: 4px !important; }
+    p, span, label { font-weight: 400; font-size: 14px; line-height: 1.4; color: #181a20; }
+    .stCaption, [data-testid="stCaptionContainer"] p, [data-testid="stCaptionContainer"] span {
+        color: #707a8a !important; font-size: 13px !important;
+        font-weight: 400 !important; line-height: 1.4 !important;
+    }
+
+    /* Sidebar Light (#fafafa) */
     section[data-testid="stSidebar"] {
-        background-color: #FFFFFF !important;
-        border-right: 1px solid #ECEFF5 !important;
-        box-shadow: 2px 0 16px rgba(0, 0, 0, 0.02) !important;
-        width: 250px !important;
+        background-color: #fafafa !important;
+        border-right: 1px solid #eaecef !important;
+        box-shadow: none !important;
+        width: 230px !important;
     }
     section[data-testid="stSidebar"] .block-container {
-        padding-top: 1.25rem !important;
-        padding-left: 1.1rem !important;
-        padding-right: 1.1rem !important;
+        padding-top: 0.9rem !important;
+        padding-left: 0.85rem !important;
+        padding-right: 0.85rem !important;
     }
 
-    /* Mercury Brand Switcher */
-    .mercury-sidebar-brand {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        padding: 4px 6px 14px 6px;
-        margin-bottom: 12px;
-        border-bottom: 1px solid #F1F4F9;
+    /* Sidebar brand with Darkish Blue Icon */
+    .stripi-sidebar-brand {
+        display: flex; align-items: center; gap: 10px;
+        padding: 2px 4px 10px 4px; margin-bottom: 10px;
+        border-bottom: 1px solid #eaecef;
     }
-    .mercury-brand-logo {
-        width: 34px;
-        height: 34px;
-        border-radius: 9px;
-        background: linear-gradient(135deg, #4318FF 0%, #6366F1 100%);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: #FFFFFF;
-        box-shadow: 0 4px 10px rgba(67, 24, 255, 0.25);
+    .stripi-brand-icon {
+        width: 28px; height: 28px; border-radius: 6px;
+        background: #1e40af; display: flex; align-items: center;
+        justify-content: center; color: #ffffff; font-weight: 700;
+        font-size: 14px; box-shadow: 0 2px 6px rgba(30, 64, 175, 0.3);
     }
-    .mercury-brand-name {
-        font-size: 14.5px;
-        font-weight: 700;
-        color: #111827;
-        letter-spacing: -0.2px;
-        line-height: 1.2;
-    }
-    .mercury-brand-sub {
-        font-size: 11px;
-        font-weight: 500;
-        color: #9CA3AF;
-    }
-    .mercury-brand-caret {
-        color: #9CA3AF;
-        font-size: 12px;
-        margin-left: auto;
-    }
+    .stripi-brand-name { font-size: 13.5px; font-weight: 600; color: #181a20; letter-spacing: -0.2px; line-height: 1.2; }
+    .stripi-brand-sub { font-size: 10px; font-weight: 500; color: #707a8a; text-transform: uppercase; letter-spacing: 0.5px; }
 
-    /* Sidebar Section Divider */
-    .mercury-nav-heading {
-        font-size: 11px;
-        font-weight: 700;
-        color: #9CA3AF;
-        letter-spacing: 0.6px;
-        text-transform: uppercase;
-        margin-top: 18px;
-        margin-bottom: 8px;
-        padding-left: 8px;
-    }
-
-    /* Custom Radio Navigation as Mercury Sidebar Menu */
-    section[data-testid="stSidebar"] div[data-testid="stRadio"] > div {
-        gap: 3px !important;
-    }
+    /* Sidebar nav */
+    section[data-testid="stSidebar"] div[data-testid="stRadio"] > div { gap: 2px !important; }
     section[data-testid="stSidebar"] [data-testid="stRadioOption"] {
-        display: flex !important;
-        align-items: center !important;
-        padding: 8px 12px !important;
-        border-radius: 10px !important;
-        cursor: pointer !important;
-        transition: all 0.15s ease !important;
-        margin-bottom: 2px !important;
-        width: 100% !important;
+        display: flex !important; align-items: center !important;
+        padding: 7px 10px !important; border-radius: 6px !important;
+        cursor: pointer !important; transition: all 0.12s ease !important;
+        margin-bottom: 2px !important; width: 100% !important;
     }
-    section[data-testid="stSidebar"] [data-testid="stRadioOption"] div:has(+ div[data-testid="stMarkdownContainer"]) {
-        display: none !important;
-    }
+    section[data-testid="stSidebar"] [data-testid="stRadioOption"] div:has(+ div[data-testid="stMarkdownContainer"]) { display: none !important; }
     section[data-testid="stSidebar"] [data-testid="stRadioOption"] p {
-        font-size: 13.5px !important;
-        font-weight: 500 !important;
-        color: #4B5563 !important;
-        margin: 0 !important;
+        font-size: 13px !important; font-weight: 400 !important;
+        color: #475569 !important; margin: 0 !important;
     }
-    section[data-testid="stSidebar"] [data-testid="stRadioOption"]:hover {
-        background-color: #F6F8FC !important;
-    }
-    section[data-testid="stSidebar"] [data-testid="stRadioOption"]:hover p {
-        color: #111827 !important;
-    }
+    section[data-testid="stSidebar"] [data-testid="stRadioOption"]:hover { background-color: #f1f5f9 !important; }
+    section[data-testid="stSidebar"] [data-testid="stRadioOption"]:hover p { color: #181a20 !important; }
     section[data-testid="stSidebar"] [data-testid="stRadioOption"][data-selected="true"] {
-        background-color: #EEF2FF !important;
+        background-color: #ffffff !important; border: 1px solid #e2e8f0 !important;
+        border-left: 3px solid #1e40af !important;
     }
     section[data-testid="stSidebar"] [data-testid="stRadioOption"][data-selected="true"] p {
-        color: #4318FF !important;
-        font-weight: 700 !important;
+        color: #1e40af !important; font-weight: 600 !important;
     }
 
-    /* Container Card styling for st.container(border=True) */
+    /* Flash animations for live ticks */
+    @keyframes flash-green {
+        0%   { background-color: rgba(14, 203, 129, 0.25); }
+        100% { background-color: transparent; }
+    }
+    @keyframes flash-red {
+        0%   { background-color: rgba(246, 70, 93, 0.20); }
+        100% { background-color: transparent; }
+    }
+    .tick-up   { animation: flash-green 1.2s ease-out; }
+    .tick-down { animation: flash-red   1.2s ease-out; }
+
+    /* Binance Metric Cards */
+    div[data-testid="stMetric"] {
+        background: #ffffff !important; border: 1px solid #eaecef !important;
+        padding: 16px 20px !important; border-radius: 8px !important;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.03) !important;
+        display: flex !important; flex-direction: column !important;
+        align-items: flex-start !important; gap: 4px !important;
+    }
+    div[data-testid="stMetric"] > div {
+        display: flex !important; flex-direction: column !important;
+        align-items: flex-start !important; width: 100% !important;
+        gap: 4px !important;
+    }
+    div[data-testid="stMetricLabel"], div[data-testid="stMetricLabel"] * {
+        color: #707a8a !important; font-size: 12px !important;
+        font-weight: 600 !important; text-transform: uppercase !important; 
+        letter-spacing: 0.5px !important; margin: 0 !important;
+        display: block !important;
+    }
+    div[data-testid="stMetricValue"], div[data-testid="stMetricValue"] * {
+        color: #181a20 !important; font-size: 24px !important;
+        font-weight: 700 !important; letter-spacing: -0.5px !important;
+        font-feature-settings: "tnum" 1 !important; margin: 0 !important;
+        line-height: 1.2 !important; display: block !important;
+    }
+    div[data-testid="stMetricDelta"], div[data-testid="stMetricDelta"] * {
+        font-size: 13px !important; font-weight: 600 !important;
+        margin: 0 !important; display: flex !important;
+        align-items: center !important;
+    }
+    div[data-testid="stExpander"] summary, div[data-testid="stExpander"] summary p {
+        font-weight: 600 !important; font-size: 14.5px !important; color: #181a20 !important;
+    }
+
+    /* Darkish Blue Primary CTAs (#1e40af) */
+    .stButton button,
+    button[kind="primary"],
+    button[kind="secondary"],
+    button[data-testid*="stBaseButton"] {
+        background: #1e40af !important;
+        border: none !important;
+        border-radius: 6px !important;
+        padding: 8px 18px !important;
+        box-shadow: 0 2px 6px rgba(30, 64, 175, 0.25) !important;
+        transition: all 0.12s ease !important;
+        min-height: unset !important;
+        height: auto !important;
+    }
+
+    .stButton button *,
+    button[kind="primary"] *,
+    button[kind="secondary"] *,
+    button[data-testid*="stBaseButton"] * {
+        background: transparent !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        box-shadow: none !important;
+        border: none !important;
+        color: #ffffff !important;
+        font-weight: 600 !important;
+    }
+
+    .stButton button, .stButton button *,
+    button[kind="primary"], button[kind="primary"] *,
+    button[kind="secondary"], button[kind="secondary"] *,
+    button[data-testid*="stBaseButton"], button[data-testid*="stBaseButton"] * {
+        color: #ffffff !important;
+        font-weight: 600 !important;
+        font-size: 13.5px !important;
+        line-height: 1.25 !important;
+    }
+
+    .stButton button:hover {
+        background: #172554 !important;
+        transform: translateY(-0.5px);
+    }
+
+    button:disabled {
+        background: #eaecef !important;
+        color: #707a8a !important;
+        opacity: 0.7 !important;
+    }
+
+    /* DataFrames, DataEditors & Tables (Light Theme) */
+    .stDataFrame, [data-testid="stDataFrame"], [data-testid="stDataEditor"], [data-testid="stTable"] { 
+        border-radius: 8px !important; border: 1px solid #eaecef !important;
+        background-color: #ffffff !important;
+        box-shadow: none !important;
+        font-feature-settings: "tnum" 1 !important; font-size: 13px !important;
+        color: #181a20 !important;
+    }
+    .stDataFrame iframe, [data-testid="stDataFrame"] > div, [data-testid="stDataEditor"] > div {
+        background-color: #ffffff !important;
+        color: #181a20 !important;
+    }
+    table {
+        background-color: #ffffff !important;
+        color: #181a20 !important;
+        border-collapse: collapse !important;
+    }
+    th {
+        background-color: #fafafa !important;
+        color: #707a8a !important;
+        border-bottom: 1px solid #eaecef !important;
+    }
+    td {
+        background-color: #ffffff !important;
+        color: #181a20 !important;
+        border-bottom: 1px solid #eaecef !important;
+    }
+
+    /* Container cards */
     div[data-testid="stVerticalBlockBorderWrapper"] > div {
-        background: #FFFFFF !important;
-        border: 1px solid #ECEFF5 !important;
-        border-radius: 18px !important;
-        padding: 20px 22px 14px 22px !important;
-        box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.03) !important;
+        background: #ffffff !important; border: 1px solid #eaecef !important;
+        border-radius: 8px !important; padding: 14px 16px 10px 16px !important;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.03) !important;
     }
 
-    /* Top Search Bar & Header */
-    .mercury-top-nav {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin-bottom: 22px;
-        gap: 16px;
+    div[data-testid="stExpander"] {
+        border-radius: 8px !important; border: 1px solid #eaecef !important;
+        box-shadow: none !important;
+        background: #ffffff !important; margin-bottom: 6px !important;
     }
-    .mercury-search-box {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        background: #FFFFFF;
-        border: 1px solid #E5E7EB;
-        border-radius: 12px;
-        padding: 7px 14px;
-        width: 380px;
+    div[data-testid="stExpander"] summary { font-weight: 600 !important; font-size: 14px !important; color: #181a20 !important; }
+
+    /* Inputs, Selectboxes & Dropdown Popovers */
+    div[data-baseweb="input"], div[data-baseweb="select"] > div { 
+        border: 1px solid #eaecef !important; border-radius: 6px !important; 
+        background-color: #ffffff !important; color: #181a20 !important; 
+    }
+    div[data-baseweb="input"]:focus-within, div[data-baseweb="select"]:focus-within { border-color: #1e40af !important; box-shadow: 0 0 0 1px #1e40af !important; }
+    input { color: #181a20 !important; font-size: 13.5px !important; font-feature-settings: "tnum" 1 !important; }
+
+    div[data-baseweb="popover"], div[data-baseweb="menu"], ul[role="listbox"] {
+        background-color: #ffffff !important;
+        border: 1px solid #eaecef !important;
+        color: #181a20 !important;
+    }
+    li[role="option"] {
+        background-color: #ffffff !important;
+        color: #181a20 !important;
+    }
+    li[role="option"]:hover, li[aria-selected="true"] {
+        background-color: #fafafa !important;
+        color: #181a20 !important;
+    }
+    div[data-baseweb="select"] span {
+        color: #181a20 !important;
+    }
+
+    /* Darkish Blue Pill tag */
+    .stripi-pill-tag {
+        display: inline-flex; align-items: center;
+        background-color: rgba(30, 64, 175, 0.1); color: #1e40af; font-size: 10px;
+        font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase;
+        border-radius: 9999px; padding: 3px 9px; line-height: 1.2;
+        border: 1px solid rgba(30, 64, 175, 0.25);
+    }
+
+    /* Live FX tick display */
+    .live-tick-card {
+        background: #ffffff; border: 1px solid #eaecef; border-radius: 8px;
+        padding: 12px 14px; display: flex; flex-direction: column; 
+        justify-content: flex-start; align-items: flex-start; gap: 4px;
+        margin-bottom: 8px; font-feature-settings: "tnum" 1;
         box-shadow: 0 1px 3px rgba(0,0,0,0.02);
     }
-    .mercury-search-placeholder {
-        color: #9CA3AF;
-        font-size: 13px;
-        font-weight: 500;
-        flex: 1;
-    }
-    .mercury-search-kbd {
-        background: #F3F4F6;
-        color: #6B7280;
-        border-radius: 6px;
-        padding: 2px 6px;
-        font-size: 11px;
-        font-weight: 600;
-        border: 1px solid #E5E7EB;
-    }
-    .mercury-top-right {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        margin-left: auto;
-    }
-    .mercury-pill-button {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        background: #FFFFFF;
-        border: 1px solid #E5E7EB;
-        border-radius: 9999px;
-        padding: 6px 14px;
-        font-size: 13px;
-        font-weight: 600;
-        color: #374151;
-        cursor: pointer;
-        box-shadow: 0 1px 2px rgba(0,0,0,0.02);
-    }
-    .mercury-icon-btn {
-        width: 34px;
-        height: 34px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: #6B7280;
-        background: #FFFFFF;
-        border: 1px solid #E5E7EB;
-        cursor: pointer;
-    }
-    .mercury-avatar {
-        width: 34px;
-        height: 34px;
-        border-radius: 50%;
-        background: linear-gradient(135deg, #FFB547 0%, #EA3A99 100%);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: #FFFFFF;
-        font-weight: 700;
-        font-size: 13px;
-        box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-    }
-
-    /* Action Buttons Row */
-    .mercury-actions-bar {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        margin-bottom: 22px;
-        flex-wrap: wrap;
-    }
-    .mercury-btn-primary {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        background: #4318FF;
-        color: #FFFFFF;
-        padding: 7px 18px;
-        border-radius: 9999px;
-        font-size: 13px;
-        font-weight: 600;
-        box-shadow: 0 4px 12px rgba(67, 24, 255, 0.25);
-        border: none;
-        cursor: pointer;
-        text-decoration: none;
-    }
-    .mercury-btn-secondary {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        background: #FFFFFF;
-        color: #374151;
-        padding: 6px 14px;
-        border-radius: 9999px;
-        font-size: 13px;
-        font-weight: 500;
-        border: 1px solid #E5E7EB;
-        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
-        cursor: pointer;
-    }
-    .mercury-btn-customize {
-        margin-left: auto;
-        color: #6B7280;
-        font-size: 13px;
-        font-weight: 500;
-        display: inline-flex;
-        align-items: center;
-        gap: 4px;
-        cursor: pointer;
-    }
-
-    /* Mercury Card */
-    .mercury-card {
-        background: #FFFFFF;
-        border: 1px solid #ECEFF5;
-        border-radius: 18px;
-        padding: 22px 24px;
-        box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.03);
-        margin-bottom: 20px;
-    }
-
-    /* Balance Hero Card Details */
-    .mercury-balance-title-row {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        margin-bottom: 6px;
-    }
-    .mercury-balance-title {
-        font-size: 13.5px;
-        font-weight: 600;
-        color: #4B5563;
-    }
-    .mercury-balance-amount {
-        font-size: 32px;
-        font-weight: 800;
-        color: #111827;
-        letter-spacing: -0.8px;
-        line-height: 1.1;
-        margin-bottom: 6px;
-    }
-    .mercury-cents {
-        font-size: 18px;
-        font-weight: 600;
-        color: #6B7280;
-        vertical-align: super;
-    }
-    .mercury-period-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 4px;
-        font-size: 12.5px;
-        font-weight: 500;
-        color: #4B5563;
-        cursor: pointer;
-    }
-    .mercury-flow-badges {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        font-size: 13px;
-        font-weight: 600;
-    }
-    .mercury-flow-up {
-        color: #059669;
-    }
-    .mercury-flow-down {
-        color: #DC2626;
-    }
-
-    /* Card Controls (Chart / Table toggle icons) */
-    .mercury-card-controls {
-        display: flex;
-        align-items: center;
-        background: #F8FAFC;
-        border: 1px solid #E5E7EB;
-        border-radius: 8px;
-        padding: 2px;
-        gap: 2px;
-    }
-    .mercury-toggle-icon {
-        width: 26px;
-        height: 24px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 6px;
-        font-size: 12px;
-        color: #6B7280;
-        cursor: pointer;
-    }
-    .mercury-toggle-icon.active {
-        background: #FFFFFF;
-        color: #111827;
-        box-shadow: 0 1px 2px rgba(0,0,0,0.06);
-    }
-
-    /* Accounts Card Details */
-    .mercury-accounts-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin-bottom: 16px;
-    }
-    .mercury-accounts-title {
-        font-size: 15px;
-        font-weight: 700;
-        color: #111827;
-        margin: 0;
-    }
-    .mercury-accounts-icons {
-        display: flex;
-        gap: 8px;
-        color: #6B7280;
-        font-size: 14px;
-        cursor: pointer;
-    }
-    .mercury-account-item {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 11px 0;
-        border-bottom: 1px solid #F3F4F6;
-    }
-    .mercury-account-item:last-child {
-        border-bottom: none;
-    }
-    .mercury-acc-label {
-        font-size: 13.5px;
-        font-weight: 600;
-        color: #1F2937;
-    }
-    .mercury-acc-mask {
-        color: #9CA3AF;
-        font-weight: 500;
-        margin-left: 4px;
-    }
-    .mercury-acc-balance {
-        font-size: 13.5px;
-        font-weight: 700;
-        color: #111827;
-        letter-spacing: -0.2px;
-    }
-
-    /* General tables and widgets */
-    .stDataFrame {
-        border-radius: 14px !important;
-        overflow: hidden !important;
-        border: 1px solid #ECEFF5 !important;
-        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.02) !important;
-        background: #FFFFFF !important;
-    }
-    div[data-testid="stExpander"] {
-        border-radius: 14px !important;
-        border: 1px solid #ECEFF5 !important;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02) !important;
-        background: #FFFFFF !important;
-        margin-bottom: 10px !important;
-    }
-    div[data-testid="stExpander"] summary {
-        font-weight: 600 !important;
-        color: #111827 !important;
-    }
-
-    /* Metric Cards */
-    div[data-testid="stMetric"] {
-        background: #FFFFFF !important;
-        border: 1px solid #ECEFF5 !important;
-        padding: 16px 20px !important;
-        border-radius: 16px !important;
-        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.02) !important;
-    }
-    div[data-testid="stMetricLabel"] {
-        color: #6B7280 !important;
-        font-size: 12px !important;
-        font-weight: 600 !important;
-        text-transform: uppercase !important;
-    }
-    div[data-testid="stMetricValue"] {
-        color: #111827 !important;
-        font-size: 24px !important;
-        font-weight: 800 !important;
-        letter-spacing: -0.5px !important;
-    }
-
-    /* Buttons */
-    .stButton button {
-        background: #4318FF !important;
-        color: #FFFFFF !important;
-        border: none !important;
-        border-radius: 9999px !important;
-        padding: 8px 20px !important;
-        font-weight: 600 !important;
-        font-size: 13px !important;
-        box-shadow: 0 4px 12px rgba(67, 24, 255, 0.25) !important;
-        transition: all 0.15s ease !important;
-    }
-    .stButton button:hover {
-        background: #3965FF !important;
-        box-shadow: 0 6px 16px rgba(67, 24, 255, 0.35) !important;
-        transform: translateY(-1px);
-    }
+    .live-tick-pair { font-size: 11.5px; font-weight: 600; color: #707a8a; text-transform: uppercase; letter-spacing: 0.5px; }
+    .live-tick-row { display: flex; align-items: baseline; gap: 6px; width: 100%; }
+    .live-tick-price { font-size: 19px; font-weight: 700; color: #181a20; letter-spacing: -0.3px; line-height: 1.1; }
+    .live-tick-arrow-up   { color: #0ecb81; font-size: 12px; font-weight: 700; display:flex; align-items:baseline; }
+    .live-tick-arrow-down { color: #f6465d; font-size: 12px; font-weight: 700; display:flex; align-items:baseline; }
 </style>
 """, unsafe_allow_html=True)
+
+
 
 from src.db.schema import initialize_db
 from src.db.connection import get_connection
 from src.dashboard.components import (
     render_data_quality_warnings,
     build_summary_table,
+    style_summary_table,
     plot_trailing_chart,
     plot_yield_curve,
     render_market_regime,
 )
-from src.config import JGB_DASHBOARD_TENORS, JGB_SPREADS
+from src.config import JGB_DASHBOARD_TENORS, JGB_SPREADS, LIVE_FX_REFRESH_MS
 from src.dashboard.exposure_ui import render_exposure_mapping_tab
 from src.dashboard.transmission_ui import render_transmission_tab
 from src.dashboard.monte_carlo_ui import render_monte_carlo_tab
 from src.dashboard.optimization_ui import render_optimization_tab
+from src.dashboard.stress_test_ui import render_stress_test_tab
 
 
 def plot_mercury_balance_chart(dates=None, values=None) -> go.Figure:
@@ -654,21 +495,21 @@ initialize_db()
 last_refresh = get_last_refreshed()
 
 # ---------------------------------------------------------------------------
-# Sidebar Navigation (Mercury Style)
+# ---------------------------------------------------------------------------
+# Sidebar Navigation (Stripi Style)
 # ---------------------------------------------------------------------------
 with st.sidebar:
     # Organization / Workspace Brand Header
     st.markdown("""
-    <div class="mercury-sidebar-brand">
+    <div class="stripi-sidebar-brand">
         <div>
-            <div class="mercury-brand-name">Risk Resilience Engine</div>
-            <div class="mercury-brand-sub">IFSA</div>
+            <div class="stripi-brand-name">Risk Resilience & Hedge Optimising</div>
+            <div class="stripi-brand-sub">IFSA NITT</div>
         </div>
-        <div class="mercury-brand-caret">▾</div>
     </div>
     """, unsafe_allow_html=True)
 
-    # Primary Navigation (Matching the reference photo)
+    # Primary Navigation
     nav_selection = st.radio(
         label="Navigation",
         options=[
@@ -676,22 +517,88 @@ with st.sidebar:
             "Company Exposure Mapping",
             "Financial Transmission",
             "Monte Carlo & Correlation",
-            "Hedge Optimization"
+            "Hedge Optimization",
+            "Stress Testing",
         ],
         index=0,
         label_visibility="collapsed"
     )
 
     st.markdown("---")
+
+    # --- Live FX Stream Panel ---
+    import subprocess, sys
+    stream_running = st.session_state.get("stream_pid") is not None
+    try:
+        if stream_running:
+            proc = st.session_state.get("stream_proc")
+            if proc and proc.poll() is not None:
+                stream_running = False
+                st.session_state.pop("stream_proc", None)
+                st.session_state.pop("stream_pid", None)
+    except Exception:
+        pass
+
+    status_dot = "🟢" if stream_running else "🔴"
+    status_txt = "Live FX Stream Active" if stream_running else "FX Stream Offline"
     st.markdown(f"""
-    <div style="padding: 0 4px;">
-        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
-            <div style="width: 8px; height: 8px; border-radius: 50%; background: #01B574; box-shadow: 0 0 0 3px rgba(1, 181, 116, 0.2);"></div>
-            <span style="font-size: 12px; font-weight: 600; color: #374151;">Live Market Feed</span>
-        </div>
-        <div style="font-size: 11px; color: #9CA3AF; margin-bottom: 12px;">Synced: {str(last_refresh)[:19]}</div>
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+        <span style="font-size:11px;">{status_dot}</span>
+        <span style="font-size:11px;font-weight:600;color:#0d253d;">{status_txt}</span>
     </div>
+    <div style="font-size:10px;color:#64748d;margin-bottom:8px;font-feature-settings:'tnum' 1;">Synced: {str(last_refresh)[:19]}</div>
     """, unsafe_allow_html=True)
+
+    col_s1, col_s2 = st.columns(2)
+    with col_s1:
+        if not stream_running:
+            if st.button("▶ Start Stream", use_container_width=True):
+                proc = subprocess.Popen(
+                    [sys.executable, "-m", "src.ingestion.finnhub_stream"],
+                    cwd=str(Path(__file__).parent)
+                )
+                st.session_state["stream_proc"] = proc
+                st.session_state["stream_pid"] = proc.pid
+                st.rerun()
+        else:
+            st.button("▶ Stream On", use_container_width=True, disabled=True)
+    with col_s2:
+        if stream_running:
+            if st.button("■ Stop", use_container_width=True):
+                proc = st.session_state.get("stream_proc")
+                if proc:
+                    proc.terminate()
+                st.session_state.pop("stream_proc", None)
+                st.session_state.pop("stream_pid", None)
+                st.rerun()
+        else:
+            st.button("■ Stop", use_container_width=True, disabled=True)
+
+    # Live FX tick display
+    try:
+        with get_connection() as _lconn:
+            _live_df = pd.read_sql(
+                "SELECT symbol, price, prev_price FROM fx_rates_live "
+                "WHERE id IN (SELECT MAX(id) FROM fx_rates_live GROUP BY symbol)",
+                _lconn
+            )
+        if not _live_df.empty:
+            for _, row in _live_df.iterrows():
+                is_up = row["price"] >= (row["prev_price"] or row["price"])
+                arrow = "▲" if is_up else "▼"
+                arrow_class = "live-tick-arrow-up" if is_up else "live-tick-arrow-down"
+                pct = ((row["price"] - (row["prev_price"] or row["price"])) / (row["prev_price"] or row["price"])) * 100
+                st.markdown(f"""
+                <div class="live-tick-card">
+                    <span class="live-tick-pair">{row['symbol']}</span>
+                    <div class="live-tick-row">
+                        <span class="live-tick-price">{row['price']:.4f}</span>
+                        <span class="{arrow_class}">{arrow} {abs(pct):.3f}%</span>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+    except Exception:
+        pass
 
     if st.button("Refresh Feed", use_container_width=True):
         with st.spinner("Refreshing live market data..."):
@@ -700,7 +607,65 @@ with st.sidebar:
             load_risk_metrics.clear()
         st.rerun()
 
+    st.markdown("<br>", unsafe_allow_html=True)
+    
+    st.markdown("#### Export & Reporting")
+    
+    from src.dashboard.exposure_ui import load_company_names
+    existing_companies_for_report = load_company_names()
+    report_company = st.selectbox(
+        "Select Enterprise Profile for Report",
+        options=existing_companies_for_report,
+        key="report_company_select"
+    )
+    
+    if st.button("Master Risk Check-up", type="primary", use_container_width=True, help="Runs all simulations and exports a PDF"):
+        import datetime
+        from src.reporting.generator import generate_master_report
+        
+        with st.status(f"Generating Master Risk Report for {report_company}...", expanded=True) as status:
+            try:
+                def progress_cb(msg):
+                    status.update(label=msg, state="running")
+                
+                pdf_bytes = generate_master_report(company_name=report_company, progress_callback=progress_cb)
+                
+                status.update(label="PDF Report generated successfully!", state="complete", expanded=False)
+                
+                st.download_button(
+                    label="Download PDF Report",
+                    data=pdf_bytes,
+                    file_name=f"Master_Risk_Report_{datetime.datetime.now().strftime('%Y%m%d')}.pdf",
+                    mime="application/pdf",
+                    type="primary",
+                    use_container_width=True
+                )
+            except Exception as e:
+                status.update(label=f"Generation failed: {e}", state="error")
+                st.error(f"Error generating report: {e}")
 
+
+
+
+# ---------------------------------------------------------------------------
+# Compact dense header bar
+# ---------------------------------------------------------------------------
+st.markdown(f"""
+<div style="display:flex;justify-content:space-between;align-items:center;
+            padding:10px 0 10px 0;border-bottom:1px solid #eaecef;margin-bottom:16px;">
+    <div style="display:flex;align-items:center;gap:10px;">
+        <span style="font-size:17px;font-weight:700;letter-spacing:-0.4px;color:#181a20;">
+            Manufacturing Risk Monitor
+        </span>
+        <span style="font-size:12px;color:#707a8a;font-weight:400;">
+            FX · Commodities · JGB · Transmission · Monte Carlo
+        </span>
+    </div>
+    <div style="font-size:11px;color:#707a8a;font-weight:500;font-feature-settings:'tnum' 1;">
+        <span style="color:#1e40af;font-weight:700;">●</span>&nbsp;Synced: {str(last_refresh)[:19]}
+    </div>
+</div>
+""", unsafe_allow_html=True)
 
 # ---------------------------------------------------------------------------
 # Main Content Views
@@ -708,8 +673,10 @@ with st.sidebar:
 metrics_df = load_risk_metrics()
 
 if nav_selection == "Market Risk Monitor":
-    st.markdown("### Market Risk Monitor")
-    st.caption("Foreign Exchange, Commodities, and Japanese Government Bonds analytics.")
+    # Auto-refresh every 5s when stream is live
+    if st.session_state.get("stream_pid"):
+        from streamlit_autorefresh import st_autorefresh
+        st_autorefresh(interval=LIVE_FX_REFRESH_MS, key="live_refresh")
 
     try:
         conn = get_connection()
@@ -719,18 +686,18 @@ if nav_selection == "Market Risk Monitor":
         pass
 
     if metrics_df.empty:
-        st.info("No market data available yet. Click 'Live Sync' above to run ingestion.")
+        st.info("No market data available yet. Click 'Refresh Feed' in the sidebar to run ingestion.")
         st.stop()
 
     st.subheader("Foreign Exchange")
     st.caption("Key trade currencies tracking USD/JPY, EUR/JPY, and AUD/JPY spot volatility.")
     fx_instruments = ["USDJPY", "EURJPY", "AUDJPY"]
     fx_table = build_summary_table(metrics_df, fx_instruments, value_col_label="Rate", decimals=2)
-    st.dataframe(fx_table, use_container_width=True, hide_index=True)
+    st.dataframe(style_summary_table(fx_table), use_container_width=True, hide_index=True)
 
     for pair in fx_instruments:
-        with st.expander(f"{pair} — Trailing 1Y Performance", expanded=True):
-            fig = plot_trailing_chart(metrics_df, pair, y_label="Rate", trailing_days=252)
+        with st.expander(f"{pair} — Trailing 1M Performance", expanded=True):
+            fig = plot_trailing_chart(metrics_df, pair, y_label="Rate", trailing_days=21, auto_color=True)
             st.plotly_chart(fig, use_container_width=True)
 
     st.divider()
@@ -739,11 +706,11 @@ if nav_selection == "Market Risk Monitor":
     st.caption("Industrial inputs and energy benchmark prices (WTI, Brent, Copper, Aluminium).")
     commodity_instruments = ["WTI", "BRENT", "COPPER", "ALUMINIUM"]
     commodity_table = build_summary_table(metrics_df, commodity_instruments, value_col_label="Price (USD)", decimals=2)
-    st.dataframe(commodity_table, use_container_width=True, hide_index=True)
+    st.dataframe(style_summary_table(commodity_table), use_container_width=True, hide_index=True)
 
     for commodity in commodity_instruments:
         with st.expander(f"{commodity} — Trailing 1Y Performance", expanded=True):
-            fig = plot_trailing_chart(metrics_df, commodity, y_label="Price (USD)", trailing_days=252)
+            fig = plot_trailing_chart(metrics_df, commodity, y_label="Price (USD)", trailing_days=252, auto_color=True)
             st.plotly_chart(fig, use_container_width=True)
 
     st.divider()
@@ -759,17 +726,17 @@ if nav_selection == "Market Risk Monitor":
         st.error(f"Could not render yield curve: {e}")
 
     jgb_table = build_summary_table(metrics_df, JGB_DASHBOARD_TENORS, value_col_label="Yield (%)", decimals=3, is_rate=True)
-    st.dataframe(jgb_table, use_container_width=True, hide_index=True)
+    st.dataframe(style_summary_table(jgb_table), use_container_width=True, hide_index=True)
 
     spread_names = list(JGB_SPREADS.keys())
     spread_table = build_summary_table(metrics_df, spread_names, value_col_label="Spread (bps)", decimals=1, is_rate=True)
     if not spread_table.empty:
         st.markdown("#### Benchmark Yield Curve Spreads")
-        st.dataframe(spread_table, use_container_width=True, hide_index=True)
+        st.dataframe(style_summary_table(spread_table), use_container_width=True, hide_index=True)
 
     for tenor in JGB_DASHBOARD_TENORS:
         with st.expander(f"JGB {tenor} — Trailing 1Y Performance", expanded=True):
-            fig = plot_trailing_chart(metrics_df, tenor, y_label="Yield (%)", trailing_days=252)
+            fig = plot_trailing_chart(metrics_df, tenor, y_label="Yield (%)", trailing_days=252, auto_color=True)
             st.plotly_chart(fig, use_container_width=True)
 
     st.divider()
@@ -787,6 +754,9 @@ elif nav_selection == "Monte Carlo & Correlation":
 elif nav_selection == "Hedge Optimization":
     render_optimization_tab()
 
+elif nav_selection == "Stress Testing":
+    render_stress_test_tab()
+
 
 
 # ---------------------------------------------------------------------------
@@ -794,7 +764,7 @@ elif nav_selection == "Hedge Optimization":
 # ---------------------------------------------------------------------------
 st.divider()
 st.caption(
-    "IFSA Risk Resilience Engine v2.0 • "
-    "Data sources: FRED, Yahoo Finance, Ministry of Finance Japan. "
-    "Designed with Mercury SaaS System."
+    "IFSA Market Risk Infrastructure v2.0 • "
+    "Data sources: FRED, Yahoo Finance, Ministry of Finance Japan."
 )
+

@@ -1,4 +1,4 @@
-﻿"""UI components for Phase 3: Financial Transmission Modeling."""
+"""UI components for Phase 3: Financial Transmission Modeling."""
 import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
@@ -211,25 +211,25 @@ def render_transmission_tab():
             factors = [s[0] for s in sorted_sens]
             impacts = [s[1]["dEV_per_sigma"] / 1e9 for s in sorted_sens]
             categories = [s[1]["category"] for s in sorted_sens]
-            cat_color = {"Commodity": "#EE5D50", "FX": "#4318FF", "Rates": "#FFB547"}
-            colors = [cat_color.get(c, "#A3AED0") for c in categories]
+            cat_color = {"Commodity": "#ea2261", "FX": "#533afd", "Rates": "#665efd"}
+            colors = [cat_color.get(c, "#64748d") for c in categories]
 
             fig_tornado = go.Figure(go.Bar(
                 x=impacts,
                 y=factors,
                 orientation="h",
-                marker=dict(color=colors, line=dict(color="#FFFFFF", width=1)),
-                text=[f"JPY {v:,.1f}B" for v in impacts],
+                marker=dict(color=colors, line=dict(color="#ffffff", width=1)),
+                text=[f"¥{v:,.1f}B" for v in impacts],
                 textposition="outside",
-                hovertemplate="%{y}: JPY %{x:,.1f}B EV impact<extra></extra>",
+                hovertemplate="%{y}: ¥%{x:,.1f}B EV impact<extra></extra>",
             ))
             fig_tornado.update_layout(
                 height=max(280, len(factors) * 42),
                 margin=dict(l=20, r=80, t=20, b=30),
-                paper_bgcolor="#FFFFFF",
-                plot_bgcolor="#FFFFFF",
+                paper_bgcolor="#ffffff",
+                plot_bgcolor="#ffffff",
                 xaxis_title="EV Impact per 1-sigma shock (JPY B)",
-                xaxis=dict(zeroline=True, zerolinecolor="#E5E7EB", zerolinewidth=2),
+                xaxis=dict(zeroline=True, zerolinecolor="#e3e8ee", zerolinewidth=1.5),
             )
             # Legend annotation
             for i, (cat, color) in enumerate(cat_color.items()):
@@ -237,9 +237,16 @@ def render_transmission_tab():
                     x=1.0, y=1.0 - i * 0.12,
                     xref="paper", yref="paper",
                     text=f"<span style='color:{color}'>■</span> {cat}",
-                    showarrow=False, font=dict(size=11), xanchor="right",
+                    showarrow=False, font=dict(size=11, family="Inter, sans-serif"), xanchor="right",
                 )
             st.plotly_chart(fig_tornado, use_container_width=True)
+
+            if len(sorted_sens) > 0:
+                top_factor = sorted_sens[0] # Actually sorted is ascending, so top is last!
+                top_factor = sorted_sens[-1]
+                from src.dashboard.components import render_insight
+                insight_msg = f"Transmission Alert: <strong>{top_factor[0]}</strong> poses the highest EV sensitivity. A 1-sigma shock to this factor alone destroys <strong>JPY {abs(top_factor[1]['dEV_per_sigma'])/1e9:,.1f} Billion</strong> in Enterprise Value."
+                render_insight(insight_msg)
 
         # -----------------------------------------------------------------------
         # 6. Proximity-to-Constraint Panel
@@ -248,7 +255,7 @@ def render_transmission_tab():
         st.markdown("#### Proximity to Covenant Constraints")
         st.caption(
             "Proximity_i = 1 / headroom_pct. Higher score = closer to breach under base-case conditions. "
-            "Feeds directly into Phase 5 HedgePriority formula."
+            "Feeds directly into HedgePriority formula."
         )
 
         proximity_scores = compute_proximity_scores(current_financials)
@@ -257,21 +264,21 @@ def render_transmission_tab():
         else:
             for constraint, pdata in proximity_scores.items():
                 breached = pdata["breached"]
-                color = "#EE5D50" if breached else ("#FFB547" if pdata["proximity"] > 3 else "#01B574")
+                color = "#ea2261" if breached else ("#665efd" if pdata["proximity"] > 3 else "#059669")
                 status = "BREACHED" if breached else f"Proximity {pdata['proximity']:.2f}"
                 headroom = f"{pdata['headroom_pct']:.1f}% headroom"
 
                 st.markdown(
                     f"""
-                    <div style="border:1px solid #E5E7EB;border-radius:10px;padding:14px 18px;margin-bottom:10px;">
+                    <div style="border:1px solid #e3e8ee;border-radius:12px;background:#ffffff;padding:16px 20px;margin-bottom:12px;box-shadow:rgba(0,55,112,0.04) 0 1px 3px;">
                       <div style="display:flex;justify-content:space-between;align-items:center;">
                         <div>
-                          <div style="font-weight:700;font-size:14px;color:#111827;">{constraint}</div>
-                          <div style="font-size:12px;color:#6B7280;margin-top:2px;">{pdata['label']}</div>
+                          <div style="font-weight:500;font-size:14px;color:#0d253d;">{constraint}</div>
+                          <div style="font-size:12px;color:#64748d;margin-top:2px;">{pdata['label']}</div>
                         </div>
                         <div style="text-align:right;">
-                          <div style="font-size:18px;font-weight:800;color:{color};">{status}</div>
-                          <div style="font-size:11px;color:#9CA3AF;">{headroom}</div>
+                          <div style="font-size:17px;font-weight:600;color:{color};font-feature-settings:'tnum' 1;">{status}</div>
+                          <div style="font-size:11px;color:#64748d;font-feature-settings:'tnum' 1;">{headroom}</div>
                         </div>
                       </div>
                     </div>
@@ -297,11 +304,11 @@ def render_transmission_tab():
             x=["Base EV", "FX Effect", "Commodity Effect", "Rate Effect", "Shocked EV"],
             textposition="outside",
             text=[
-                f"JPY {ev_base/1e9:,.1f}B",
-                f"JPY {drivers.get('FX Impact (Δ Rev)', 0)/1e9:,.1f}B",
-                f"JPY {drivers.get('Commodity Impact (Δ COGS)', 0)/1e9:,.1f}B",
-                f"JPY {drivers.get('Rate Impact (Δ Int)', 0)/1e9:,.1f}B",
-                f"JPY {ev_shock/1e9:,.1f}B",
+                f"¥{ev_base/1e9:,.1f}B",
+                f"¥{drivers.get('FX Impact (Δ Rev)', 0)/1e9:,.1f}B",
+                f"¥{drivers.get('Commodity Impact (Δ COGS)', 0)/1e9:,.1f}B",
+                f"¥{drivers.get('Rate Impact (Δ Int)', 0)/1e9:,.1f}B",
+                f"¥{ev_shock/1e9:,.1f}B",
             ],
             y=[
                 ev_base,
@@ -310,16 +317,16 @@ def render_transmission_tab():
                 drivers.get("Rate Impact (Δ Int)", 0),
                 ev_shock,
             ],
-            increasing={"marker": {"color": "#01B574"}},
-            decreasing={"marker": {"color": "#EE5D50"}},
-            totals={"marker": {"color": "#4318FF"}},
-            connector={"line": {"color": "#E9EDF7", "width": 2}},
+            increasing={"marker": {"color": "#059669"}},
+            decreasing={"marker": {"color": "#ea2261"}},
+            totals={"marker": {"color": "#533afd"}},
+            connector={"line": {"color": "#e3e8ee", "width": 1.5}},
         ))
         fig.update_layout(
             height=360,
             margin=dict(l=30, r=20, t=40, b=30),
-            paper_bgcolor="#FFFFFF",
-            plot_bgcolor="#FFFFFF",
+            paper_bgcolor="#ffffff",
+            plot_bgcolor="#ffffff",
             showlegend=False,
         )
         st.plotly_chart(fig, use_container_width=True)

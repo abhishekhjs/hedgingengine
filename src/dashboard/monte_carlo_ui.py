@@ -1,4 +1,4 @@
-﻿"""UI components for Phase 4: Monte Carlo Simulation & Correlation."""
+"""UI components for Phase 4: Monte Carlo Simulation & Correlation."""
 import streamlit as st
 import logging
 import plotly.graph_objects as go
@@ -126,6 +126,10 @@ def render_monte_carlo_tab():
         else:
             st.success("Liquidity Solvency: 100% of 10,000 scenarios maintain positive cash.")
 
+        from src.dashboard.components import render_insight
+        insight_msg = f"Monte Carlo Insight: We ran 10,000 market shock scenarios. In the worst 5% of cases (95% confidence level), Free Cash Flow drops to <strong>JPY {cfar_95/1e9:,.1f} Billion</strong> (a decline of JPY {abs(cfar_delta)/1e9:,.1f}B). Enterprise Value at Risk is calculated at <strong>JPY {evar_95/1e9:,.1f} Billion</strong>."
+        render_insight(insight_msg)
+
         st.markdown("---")
 
         # -----------------------------------------------------------------------
@@ -162,21 +166,21 @@ def render_monte_carlo_tab():
 
             attr_factors = ["Commodity", "FX", "Rates"]
             attr_values = [attr.get(f, 0.0) / 1e9 for f in attr_factors]
-            attr_colors = ["#EE5D50", "#4318FF", "#FFB547"]
+            attr_colors = ["#ea2261", "#533afd", "#665efd"]
 
             fig_attr = go.Figure(go.Bar(
                 x=attr_factors,
                 y=attr_values,
-                marker=dict(color=attr_colors, line=dict(color="#FFFFFF", width=1.5)),
-                text=[f"JPY {v:,.2f}B" for v in attr_values],
+                marker=dict(color=attr_colors, line=dict(color="#ffffff", width=1.5)),
+                text=[f"¥{v:,.2f}B" for v in attr_values],
                 textposition="outside",
             ))
             fig_attr.update_layout(
                 yaxis_title="Marginal CFaR Contribution (JPY B)",
                 height=300,
                 margin=dict(l=20, r=20, t=30, b=30),
-                paper_bgcolor="#FFFFFF",
-                plot_bgcolor="#FFFFFF",
+                paper_bgcolor="#ffffff",
+                plot_bgcolor="#ffffff",
                 showlegend=False,
             )
             st.plotly_chart(fig_attr, use_container_width=True)
@@ -198,29 +202,29 @@ def render_monte_carlo_tab():
                 sim_data = results["simulated_ev"]
                 base_val = results["base_ev"]
                 var95_val = results["risk_metrics"]["EV"]["var_95"]
-                color = "#4318FF"
+                color = "#533afd"
             elif dist_choice == "Free Cash Flow":
                 sim_data = results["simulated_fcf"]
                 base_val = results["base_fcf"]
                 var95_val = results["risk_metrics"]["FCF"]["var_95"]
-                color = "#01B574"
+                color = "#059669"
             else:
                 sim_data = results["simulated_cash"]
                 base_val = results["base_cash"]
                 var95_val = results["risk_metrics"]["Liquidity"]["var_95"]
-                color = "#FFB547"
+                color = "#665efd"
 
             fig_hist = go.Figure()
             fig_hist.add_trace(go.Histogram(
                 x=sim_data,
                 nbinsx=80,
                 name=dist_choice,
-                marker=dict(color=color, opacity=0.82, line=dict(color="#FFFFFF", width=0.5)),
+                marker=dict(color=color, opacity=0.82, line=dict(color="#ffffff", width=0.5)),
             ))
             fig_hist.add_vline(x=base_val, line_width=2.5, line_dash="dash",
-                               line_color="#01B574", annotation_text="Base", annotation_position="top")
+                               line_color="#059669", annotation_text="Base", annotation_position="top")
             fig_hist.add_vline(x=var95_val, line_width=2.5, line_dash="dash",
-                               line_color="#EE5D50", annotation_text="95% VaR", annotation_position="top")
+                               line_color="#ea2261", annotation_text="95% VaR", annotation_position="top")
             fig_hist.update_layout(
                 xaxis_title=f"{dist_choice} (JPY)",
                 yaxis_title="Frequency",
@@ -228,8 +232,8 @@ def render_monte_carlo_tab():
                 bargap=0.04,
                 height=360,
                 margin=dict(l=30, r=20, t=30, b=30),
-                paper_bgcolor="#FFFFFF",
-                plot_bgcolor="#FFFFFF",
+                paper_bgcolor="#ffffff",
+                plot_bgcolor="#ffffff",
             )
             st.plotly_chart(fig_hist, use_container_width=True)
 
@@ -243,14 +247,14 @@ def render_monte_carlo_tab():
                 corr_filtered.round(2),
                 text_auto=True,
                 aspect="auto",
-                color_continuous_scale=[[0, "#EE5D50"], [0.5, "#F4F7FE"], [1, "#4318FF"]],
+                color_continuous_scale=[[0, "#ea2261"], [0.5, "#f6f9fc"], [1, "#533afd"]],
                 zmin=-1, zmax=1,
             )
             fig_corr.update_layout(
                 height=360,
                 margin=dict(l=20, r=20, t=30, b=20),
-                paper_bgcolor="#FFFFFF",
-                plot_bgcolor="#FFFFFF",
+                paper_bgcolor="#ffffff",
+                plot_bgcolor="#ffffff",
             )
             st.plotly_chart(fig_corr, use_container_width=True)
 
@@ -276,34 +280,34 @@ def render_monte_carlo_tab():
         fig_fan.add_trace(go.Scatter(
             x=q_labels + q_labels[::-1],
             y=list(fan_data[95] / 1e9) + list(fan_data[5][::-1] / 1e9),
-            fill="toself", fillcolor="rgba(67,24,255,0.08)", line=dict(color="rgba(0,0,0,0)"),
+            fill="toself", fillcolor="rgba(83,58,253,0.07)", line=dict(color="rgba(0,0,0,0)"),
             name="P5-P95 Range", hoverinfo="skip",
         ))
         fig_fan.add_trace(go.Scatter(
             x=q_labels + q_labels[::-1],
             y=list(fan_data[75] / 1e9) + list(fan_data[25][::-1] / 1e9),
-            fill="toself", fillcolor="rgba(67,24,255,0.15)", line=dict(color="rgba(0,0,0,0)"),
+            fill="toself", fillcolor="rgba(83,58,253,0.14)", line=dict(color="rgba(0,0,0,0)"),
             name="P25-P75 Range", hoverinfo="skip",
         ))
         # Median line
         fig_fan.add_trace(go.Scatter(
             x=q_labels, y=fan_data[50] / 1e9,
-            line=dict(color="#4318FF", width=2.5),
+            line=dict(color="#533afd", width=2.5),
             name="Median (P50)",
         ))
         # Base line
         base_line = [base_fcf / 4e9] * n_quarters
         fig_fan.add_trace(go.Scatter(
             x=q_labels, y=base_line,
-            line=dict(color="#01B574", width=1.5, dash="dash"),
+            line=dict(color="#059669", width=1.5, dash="dash"),
             name="Base FCF/Q",
         ))
         fig_fan.update_layout(
             yaxis_title="FCF (JPY B)",
             height=320,
             margin=dict(l=30, r=20, t=30, b=30),
-            paper_bgcolor="#FFFFFF",
-            plot_bgcolor="#FFFFFF",
+            paper_bgcolor="#ffffff",
+            plot_bgcolor="#ffffff",
             legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
         )
         st.plotly_chart(fig_fan, use_container_width=True)
