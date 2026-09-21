@@ -50,21 +50,21 @@ binance_palette = ["#1e40af", "#0ecb81", "#f6465d", "#3b82f6", "#2dbdb6", "#707a
 binance_template = go.layout.Template()
 binance_template.layout.paper_bgcolor = "#ffffff"
 binance_template.layout.plot_bgcolor = "#ffffff"
-binance_template.layout.font = dict(family="Inter, -apple-system, system-ui, sans-serif", color="#181a20", size=12)
+binance_template.layout.font = dict(family="Plus Jakarta Sans, -apple-system, system-ui, sans-serif", color="#181a20", size=12)
 binance_template.layout.colorway = binance_palette
 binance_template.layout.xaxis = dict(
     showgrid=True,
     gridcolor="#eaecef",
     zeroline=False,
     linecolor="#eaecef",
-    tickfont=dict(color="#707a8a", size=11, family="Inter, sans-serif")
+    tickfont=dict(color="#707a8a", size=11, family="Plus Jakarta Sans, sans-serif")
 )
 binance_template.layout.yaxis = dict(
     showgrid=True,
     gridcolor="#eaecef",
     zeroline=False,
     linecolor="#eaecef",
-    tickfont=dict(color="#707a8a", size=11, family="Inter, sans-serif")
+    tickfont=dict(color="#707a8a", size=11, family="Plus Jakarta Sans, sans-serif")
 )
 
 pio.templates["binance"] = binance_template
@@ -75,10 +75,10 @@ pio.templates.default = "binance"
 # ---------------------------------------------------------------------------
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
 
     html, body, [class*="css"], .stApp {
-        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+        font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
         font-feature-settings: "ss01" 1 !important;
         color: #181a20 !important;
         -webkit-font-smoothing: antialiased !important;
