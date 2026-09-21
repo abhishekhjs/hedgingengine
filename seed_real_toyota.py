@@ -4,7 +4,7 @@ import pandas as pd
 from pathlib import Path
 
 # Connect to database
-DB_PATH = Path('c:/Users/Abhishekh JS/Documents/engine/data/market_data.db')
+DB_PATH = Path(__file__).parent / 'data' / 'market_data.db'
 conn = sqlite3.connect(str(DB_PATH))
 
 company_name = 'Toyota (Real FY24)'
