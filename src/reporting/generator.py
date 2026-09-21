@@ -51,15 +51,27 @@ def fig_to_base64(fig: go.Figure) -> str:
         print(f"Error converting figure to image: {e}")
         return ""
 
+import subprocess
+
 def generate_pdf_from_html(html_content: str) -> bytes:
     """Generate a PDF from HTML using Playwright synchronously."""
-    with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
-        page = browser.new_page()
-        page.set_content(html_content, wait_until="networkidle")
-        pdf_bytes = page.pdf(format="A4", print_background=True, margin={"top": "0", "right": "0", "bottom": "0", "left": "0"})
-        browser.close()
-        return pdf_bytes
+    def _run():
+        with sync_playwright() as p:
+            browser = p.chromium.launch(headless=True)
+            page = browser.new_page()
+            page.set_content(html_content, wait_until="networkidle")
+            pdf_bytes = page.pdf(format="A4", print_background=True, margin={"top": "0", "right": "0", "bottom": "0", "left": "0"})
+            browser.close()
+            return pdf_bytes
+
+    try:
+        return _run()
+    except Exception as e:
+        if "Executable doesn't exist" in str(e) or "playwright install" in str(e):
+            print("Playwright browsers not found. Installing chromium...", flush=True)
+            subprocess.run(["playwright", "install", "chromium"], check=True)
+            return _run()
+        raise e
 
 def generate_master_report(company_name: str, progress_callback=None) -> bytes:
     """
